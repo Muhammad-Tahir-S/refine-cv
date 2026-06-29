@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "retrieved": "2026-06-04",
+  "sources": [
+    {
+      "id": "harvard-mcs-resume",
+      "title": "Create a Strong Resume — Harvard FAS Mignone Center for Career Success",
+      "url": "https://careerservices.fas.harvard.edu/resources/create-a-strong-resume/",
+      "publisher": "Harvard University — Mignone Center for Career Success",
+      "retrieved": "2026-06-04",
+      "topics": ["human-review", "structure", "bullets", "action-verbs", "formatting", "honesty"]
+    },
+    {
+      "id": "harvard-hes-2024-pdf",
+      "title": "2024 HES Resume and Letter Guide (PDF)",
+      "url": "https://cdn-careerservices.fas.harvard.edu/wp-content/uploads/sites/161/2024/08/2024-HES_resume-and-letter.pdf",
+      "publisher": "Harvard Extension School / Harvard Career Services",
+      "retrieved": "2026-06-04",
+      "topics": ["formatting", "structure", "pdf-docx", "tables-columns"]
+    },
+    {
+      "id": "berkeley-ischool-ats",
+      "title": "Using Jobscan for Applicant Tracking Systems",
+      "url": "https://www.ischool.berkeley.edu/careers/students/jobscan",
+      "publisher": "UC Berkeley School of Information — Career Services",
+      "retrieved": "2026-06-04",
+      "topics": ["ats-keywords", "tailoring", "format-parsing", "section-headings", "acronyms"]
+    },
+    {
+      "id": "ut-austin-cns-ats",
+      "title": "Applicant Tracking Systems — UT Austin CNS Career Services",
+      "url": "https://careerservices.cns.utexas.edu/resources/resumes/applicant-tracking-systems",
+      "publisher": "University of Texas at Austin — CNS Career Services",
+      "retrieved": "2026-06-04",
+      "topics": ["ats-tailoring", "chronological-format", "formatting-avoid", "keyword-incorporation"]
+    },
+    {
+      "id": "jobscan-2025-ats-report",
+      "title": "2025 Applicant Tracking System (ATS) Usage Report",
+      "url": "https://www.jobscan.co/blog/fortune-500-use-applicant-tracking-systems/",
+      "publisher": "Jobscan",
+      "retrieved": "2026-06-04",
+      "topics": ["ats-prevalence", "context-only"],
+      "note": "Use for prevalence/context only; not primary authority for writing rules."
+    }
+  ]
+}

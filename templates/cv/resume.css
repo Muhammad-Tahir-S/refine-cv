@@ -1,0 +1,129 @@
+@page {
+  size: letter;
+  margin: 0.55in 0.65in;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.35;
+  color: #111;
+}
+
+.cv {
+  max-width: 100%;
+}
+
+.cv-header {
+  text-align: center;
+  margin-bottom: 0.35rem;
+}
+
+.cv-name {
+  margin: 0 0 0.15rem;
+  font-size: 18pt;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.cv-subtitle {
+  margin: 0 0 0.2rem;
+  font-size: 11pt;
+  font-weight: 600;
+}
+
+.cv-contact {
+  margin: 0;
+  font-size: 9.5pt;
+  color: #222;
+}
+
+.cv-contact a {
+  color: #111;
+  text-decoration: none;
+}
+
+.cv-section {
+  margin-top: 0.55rem;
+}
+
+.cv-section-title {
+  margin: 0 0 0.25rem;
+  font-size: 11pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #333;
+  padding-bottom: 0.12rem;
+}
+
+.cv-role {
+  margin-top: 0.35rem;
+}
+
+.cv-role:first-child {
+  margin-top: 0.15rem;
+}
+
+.cv-role-title {
+  margin: 0;
+  font-size: 10.5pt;
+  font-weight: 700;
+}
+
+.cv-role-meta {
+  margin: 0.05rem 0 0.15rem;
+  font-size: 10pt;
+  font-weight: 600;
+}
+
+.cv-paragraph {
+  margin: 0.15rem 0 0.2rem;
+}
+
+.cv-note {
+  margin: 0.15rem 0 0.2rem;
+  font-style: italic;
+  color: #333;
+}
+
+.cv-stack {
+  margin: 0.1rem 0 0.2rem;
+  font-size: 10pt;
+}
+
+.cv-stack-label {
+  font-weight: 700;
+}
+
+.cv-bullets {
+  margin: 0.1rem 0 0.25rem;
+  padding-left: 1.1rem;
+}
+
+.cv-bullets li {
+  margin-bottom: 0.12rem;
+}
+
+.cv-bullets li:last-child {
+  margin-bottom: 0;
+}
+
+a {
+  color: #111;
+  text-decoration: underline;
+}
+
+strong {
+  font-weight: 700;
+}
+
+em {
+  font-style: italic;
+}

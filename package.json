@@ -1,0 +1,38 @@
+{
+  "name": "refine-cv",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "CV tailoring workflow with GitHub evidence indexing",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "extract-cv": "pnpm build && node dist/bin/extract-cv.js",
+    "index-github": "pnpm build && node dist/bin/index-github.js",
+    "list-repos": "pnpm build && node dist/bin/list-repos.js",
+    "validate": "pnpm build && node dist/bin/validate-setup.js",
+    "render-cv": "pnpm build && node dist/bin/render-cv.js",
+    "setup:pdf": "pnpm exec puppeteer browsers install chrome",
+    "postinstall": "pnpm exec puppeteer browsers install chrome",
+    "auth:github": "gh auth login",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@octokit/graphql": "^9.0.3",
+    "@octokit/rest": "^22.0.1",
+    "commander": "^14.0.3",
+    "pdf-parse": "^1.1.1",
+    "puppeteer": "^24.36.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.1",
+    "@types/pdf-parse": "^1.1.5",
+    "typescript": "^5.9.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["puppeteer"]
+  }
+}

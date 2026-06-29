@@ -1,0 +1,27 @@
+# Node
+node_modules/
+dist/
+.pnpm-store/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+*.swp
+*.swo
+
+# Secrets — never commit tokens
+.env
+.env.*
+*.pem
+*_token*
+*.pat
+
+# Optional local overrides (untracked personal notes)
+profile/local-notes.md
+
+# Job folders may contain employer-specific drafts — track by default;
+# uncomment to ignore all application artifacts:
+# jobs/**
