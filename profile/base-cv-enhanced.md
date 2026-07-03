@@ -1,116 +1,109 @@
 # Muhammad-Tahir Sanuth
 
-**Front-End Engineer**  
-Lagos, Nigeria (Remote) · Mtz5prif@gmail.com · (+234) 810-234-2878 · GitHub: Muhammad-Tahir-S
+**Full-Stack Engineer**  
+Lagos, Nigeria (Remote) · Mtz5prif@gmail.com · (+234) 810-234-2878 · GitHub: github.com/Muhammad-Tahir-S · LinkedIn: linkedin.com/in/muhammad-tahir-sanuth-560566104
 
 ---
 
 ## Summary
 
-Front-end engineer with ~4 years of professional experience building and maintaining **React** and **TypeScript** SaaS and workflow web products remotely for international teams. Strong in **UI implementation**, **frontend architecture**, **component and integration testing**, and collaboration with design and product. Delivers production features on large enterprise monorepos for **Codygo** client products (Addressable, Datafy, Worknet, and related tooling); led frontend delivery at **ZeroComplex AI**; recent **Tempo** contract shipping workflow and incident-management UIs. Positioning for **senior frontend IC** roles while official Codygo title remains Front-End Engineer.
+Full-stack engineer with five years of experience building TypeScript, React, and Next.js applications for international B2B SaaS teams. Specializes in analytics dashboards, design-system implementation, data visualizations, and component and integration testing.
 
 ---
 
 ## Professional Experience
 
-### Codygo — Front-End Engineer  
+### Codygo — Full-Stack Engineer  
 **Aug 2022 – Present** · Ramat-Gan, Israel (Remote)
 
-Codygo builds and maintains full-stack TypeScript SaaS applications for clients ([codygo.com](https://codygo.com)). Client work appears under client GitHub orgs (`addressable-io`, `datafy-io`, `codygo-solutions`).
+TypeScript SaaS consultancy delivering client web products ([codygo.com](https://codygo.com)).
 
-- Delivered consistently **high-quality front-end work across three client products in parallel** (Addressable, Worknet AI, and Datafy).
-- Maintain frontends for **Addressable** (~1.8 years), **Worknet AI**, and **Datafy** (~6 months each)—pixel-perfect UI, application architecture input, and **component/integration tests**.
-- Ship production changes on a large **React**, **TypeScript**, **Tailwind CSS**, and **Vite** monorepo: **multi-tenant UX**, **campaign workflows**, and **analytics/dashboard** surfaces. `verified-from-github`
-- Landed production fixes via team PR process on `addressable-io/a9e-mono` (tenant switching, campaign edit guardrails, dashboard and analytics UX). `verified-from-github`
-- Extended **Datafy** cloud-ops UI (`datafy-io/frontend-mono`): log/volume table UX, tags-column tooltips, date-range and chart label formatting, and related data-surface improvements. `verified-from-github`
-- Built **QuickBooks Desktop integration** UIs and adapters—forms, entity query APIs, error handling, and test coverage (`codygo-solutions/qbdt-adapter-client`, `qbdt-adapter`, `quickbooks-adapter`). `verified-from-github`
-- Implemented **Jira ↔ GitHub sync** (fetch and upsert issues) (`codygo-solutions/jira-github-sync`). `verified-from-github`
-- Shipped **AI product UI**—embeddable widget login/metric components and form controls (`codygo-solutions/codygo-ai-widget-mono`). `verified-from-github`
-- Contribute to Addressable full-stack work to a lesser degree: **AWS serverless**, **MongoDB**, **PostgreSQL**.
+- Delivered front-end work across Addressable, Worknet AI, and Datafy in parallel—architecture input, Figma-spec UI, and component and integration tests on React, TypeScript, Tailwind CSS, and Vite monorepos.
+- Built and extended a Chakra UI design system—buttons, inputs, typography, tables, tooltips, and shared layout primitives used across product surfaces.
+- Shipped Addressable campaign workflows, multi-tenant UX, and analytics dashboard surfaces; added server-side table operations, pagination, and API-backed report views.
+- Extended Datafy cloud-operations UI with log and volume table UX, tags-column tooltips, and date-range and chart label formatting.
+- Built QuickBooks Desktop integration UIs and adapter coverage—entity create, update, delete, query, and change flows with error test cases.
+- Implemented Jira-to-GitHub sync for internal tooling and embeddable AI widget UI with login, metrics, and form controls.
+- Resolved platform issues—post-authentication Lambda warmup, S3 and database report-file sync, auth integration, and runtime environment fixes.
 
-**Stack:** React, TypeScript, Tailwind CSS, Vite, Jest, Next.js (product-dependent), Storybook, AWS (serverless), MongoDB, PostgreSQL
-
----
-
-### Tempo — Front-End Engineer (contract)  
-**Mar 2025 – May 2025** · Remote · [tempo.new](https://www.tempo.new/)
-
-Prompt-driven design and development platform ([Tempo](https://www.tempo.new/)). Contract delivery under `metzinc/*` repos.
-
-- Shipped workflow **designer/canvas** features—node config forms, template save/delete, panel layout, dark theme (`metzinc/workflow-designer-20250425`). `verified-from-github`
-- Implemented **authentication** for incident apps—JWT, Supabase, server actions, token redirects (`metzinc/Tempo-Main-Incidents`). `verified-from-github`
-- Developed **Next.js workflow runtime** and **full-stack incident/kanban** experiences on `metzinc/workflow_nextjs_20250520` and `metzinc/tempo-full-stack-incident-mgmt` (commits under org git identity; attributed per engagement scope).
-- Built a **full-stack internal work-tracking dashboard in two weeks** for Tempo delivery coordination.
-
-**Stack:** Next.js, TypeScript, Tailwind CSS, Supabase, workflow/canvas UI
-
-_Concurrent with Codygo (Mar–May 2025): managed both engagements full-time._
+**Stack:** React, TypeScript, Tailwind CSS, Chakra UI, Vite, Storybook, Jest, Cypress, Next.js, REST, AWS (serverless), MongoDB, PostgreSQL
 
 ---
 
 ### Collabscape — Front-End Engineer (via Bexxle Technologies)  
 **Jul 2024 – Jul 2025** · Lagos, Nigeria (Remote)
 
-- Delivered **Collabscape** social product flows—create/edit post APIs, filters, and integrations (`Bexxle-Technologies/collabscape-mono-repo`). `verified-from-github`
+Social product for content creators.
+
+- Delivered authorization flows, social account connections, calendar grid, and rich post-creation interface on a TypeScript monorepo.
+- Integrated sign-in, sign-up, and create and edit post APIs with calendar and event-detail UI.
+- Shipped homepage, filter UX, and post-form connections to calendar views.
+
+**Stack:** React, TypeScript, REST, Git
+
+---
+
+### Tempo — Full-Stack Engineer (contract)  
+**Mar 2025 – May 2025** · Canada (Remote) · [tempo.new](https://www.tempo.new/)
+
+Prompt-driven design and development platform.
+
+- Shipped workflow designer canvas features—node configuration forms, template save and delete, panel layout, and dark theme.
+- Built a full-stack internal work-tracking dashboard in two weeks for delivery coordination.
+- Developed Next.js workflow runtime and full-stack incident and kanban applications.
+- Refactored incident-management UI with Radix UI primitives; implemented JSON Web Token (JWT) and Supabase authentication flows.
+- Resolved CORS, token encoding, auth logging, and environment configuration around the auth flow.
+
+**Stack:** Next.js, TypeScript, Tailwind CSS, Radix UI, Supabase, React, REST
+
+---
 
 ### ZeroComplex AI — Front-End Lead  
 **Aug 2023 – Apr 2024** · Lagos, Nigeria (Remote)
 
-ZeroComplex AI integrates AI into businesses through custom AI workflows.
+Custom AI workflow web applications ([zerocomplex.ai](https://zerocomplex.ai)).
 
-- Led frontend delivery from design through production for workflow-oriented web applications for a **team of three**.
-- Partnered with product management to **plan sprints**, **review designs**, and **assign frontend work** across the team.
-- Ran **code reviews** and **pair programming**; co-planned application architecture with backend engineering.
-- Owned **end-to-end testing** and quality assurance for **weekly releases**.
-- Supported **weekly investor demos** for **12 weeks** with stable, presentation-ready product UI.
-- Built with **Next.js** (App Router and Pages Router), **TypeScript**, and **Tailwind CSS**.
+- Led front-end delivery for a team of three on Next.js AI-integrated apps—code reviews and pair programming.
+- Partnered with product to review designs, plan sprints, and ship weekly releases with presentation-ready UI for twelve weeks of investor demos.
+- Co-planned improved front-end architecture for Doculess with backend engineering.
+- Owned end-to-end testing and quality assurance for weekly release cadence.
 
-_Work used company email/GitHub; not reflected in personal GitHub index._
+**Stack:** Next.js, TypeScript, Tailwind CSS, React, design systems, REST
 
 ---
 
-### Pramie Technologies — Front-End Developer  
+### Pramie Technologies — Front-End Engineer  
 **Feb 2022 – Jan 2023** · Lagos, Nigeria (Remote)
 
-- Built client web applications to spec using **React**, **Next.js**, and **TypeScript**.
-- Collaborated in a **7+ developer** team to develop and maintain **Bloco**.
-- Executed migration of the Bloco website to a new version.
-- Maintained the **First Active 365** website.
-- Participated in peer **code reviews**.
+- Built client websites and web applications to specifications with React, Next.js, and TypeScript in a seven-developer team.
+- Executed Bloco event-ticketing platform migration—full UI revamp and API optimizations for version two.
+- Maintained First Active 365 website with peer code reviews.
+
+**Stack:** React, Next.js, TypeScript, Tailwind CSS, Git, REST
 
 ---
 
-### CodingBlindspots — Front-End Developer (Intern)  
+### YK-Networks — Front-End Engineer (Intern)  
+**Apr 2021 – Jul 2022** · Lagos, Nigeria (Remote)
+
+- Built React components to match client design system specifications.
+
+---
+
+### Coding Blindspot — Front-End Engineer (Intern)  
 **Aug 2021 – Dec 2021** · India (Remote)
 
-- Implemented React feature requests against product designs in a remote internship. `verified-from-github`
-- Delivered UI fixes including navigation, API integration paths, and comment-thread styling. `verified-from-github`
-
----
-
-### YK-Networks — Front-End Developer (Intern)  
-**Apr 2021 – Jul 2022** · Lagos, Nigeria
-
-- Built **React** components to match client design system specifications.
+- Implemented React feature requests against product designs in a remote internship.
 
 ---
 
 ## Selected Projects
 
 ### Feedback Forum — Full-stack feedback application  
-**TypeScript**, **React** · `Muhammad-Tahir-S/Feedback-Forum`
-
-- Built post create/list/sort flows and iterative filter UX (including inline date filters). `verified-from-github`
-
-### Personal portfolio — Marketing site  
-**TypeScript** · `Muhammad-Tahir-S/portfolio`
-
-- Improved responsive layout, contact integration, and server/client rendering consistency. `verified-from-github`
+TypeScript, React · github.com/Muhammad-Tahir-S/Feedback-Forum
 
 ### Ascent — Data visualization UI  
-**TypeScript** · `Muhammad-Tahir-S/Ascent`
-
-- Implemented leaderboard cards and chart components (including Nivo integration and view-transition experiments). `verified-from-github`
+TypeScript · github.com/Muhammad-Tahir-S/Ascent
 
 ---
 
@@ -124,24 +117,16 @@ Nov 2014 · Abeokuta, Nigeria
 
 ---
 
-## Technical Skills
+## Skills
 
-**Frontend:** HTML5, CSS3, JavaScript, TypeScript, React, Next.js, Tailwind CSS, Chakra UI, Styled Components, Redux, MobX, Storybook  
+**Languages and frameworks:** JavaScript, TypeScript, HTML5, CSS3, React, Next.js, Tailwind CSS, Chakra UI, Radix UI, Vite, Storybook  
 
-**Testing & quality:** Jest, end-to-end testing, ESLint  
+**Testing and quality:** Jest, Cypress, end-to-end testing, ESLint  
 
-**Data & APIs:** GraphQL, Chart.js, Firebase, REST integrations (QuickBooks, Jira)  
+**Data and APIs:** Chart.js, GraphQL, REST integrations (QuickBooks, Jira)  
 
-**Platform & tools:** Git, GitHub, AWS (serverless exposure), MongoDB, PostgreSQL, Supabase  
-
-**Practices:** Component-driven UI, design-system alignment, accessibility-aware UI, workflow/canvas UX, code review, remote collaboration  
+**Platform and tools:** Git, GitHub, Figma, AWS (serverless exposure), MongoDB, PostgreSQL, Supabase, Express, Node.js, Drizzle, Prisma
 
 ---
 
-## Interests
-
-Creative writing, editing, football, table tennis, illustration, manga/manhwa, anime, fantasy novels
-
----
-
-_Enhanced from `base-cv.pdf` on 2026-06-04. GitHub index: your commits/PRs only. `verified-from-github` = indexed metadata (no proprietary code). No internal ticket IDs in this baseline. Review `profile/gap-report.md` before tailoring._
+_Enhanced baseline synced 2026-07-03 from profile/base-cv.pdf. Compliant with sources/cv-best-practices.md. Review profile/gap-report.md before job-specific tailoring._

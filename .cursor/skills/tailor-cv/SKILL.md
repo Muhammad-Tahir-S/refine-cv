@@ -64,6 +64,8 @@ Use both acronym and long form where the JD implies both (see best practices).
 - Single-column plain Markdown (ATS-friendly when exported to PDF)
 - Omit anything in questionnaire red lines
 
+**Completion criterion:** every required keyword from the step-3 map is either placed naturally in the CV or logged as a gap in `match-report.md` — none silently dropped.
+
 ### 6. Write `match-report.md`
 
 Include:
@@ -88,9 +90,10 @@ pnpm render-cv jobs/YYYY-MM-DD-company-role/tailored-cv.md
 
 Confirm the PDF has no internal evidence tags or metadata footer. For template calibration, compare `profile/base-cv-preview.pdf` with `profile/base-cv.pdf`.
 
+## Toptal application pitches
+
+For Toptal job application paragraphs (third-person pitch from a pasted JD), use **generate-toptal-pitch** (`.cursor/skills/generate-toptal-pitch/SKILL.md`) or `/toptal-pitch` — not this skill.
+
 ## Anti-patterns
 
-- Keyword stuffing or hidden text
-- Tables, multi-column layout, or graphics in tailored output
-- Promoting `needs-your-confirmation` GitHub bullets without user approval
-- Using SEO blogs as rationale (cite `sources/references.json` IDs only)
+Follow the anti-patterns in [sources/cv-best-practices.md](../../../sources/cv-best-practices.md) (keyword stuffing, tables/columns/graphics, non-standard headings, SEO-blog rationale — cite `sources/references.json` IDs only). Repo-specific guardrail: never promote `needs-your-confirmation` GitHub bullets into the final CV without user approval.

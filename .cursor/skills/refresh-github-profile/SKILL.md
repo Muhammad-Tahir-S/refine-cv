@@ -47,10 +47,4 @@ pnpm index-github
 
 ## Weekly loop
 
-After the **first successful** index, document for the user:
-
-```
-/loop 7d /refresh-github-profile
-```
-
-Per [loop skill](https://cursor.com): run this prompt immediately once when arming, then every 7 days. See [docs/WEEKLY-REFRESH.md](../../../docs/WEEKLY-REFRESH.md).
+After the **first successful** index, point the user to [docs/WEEKLY-REFRESH.md](../../../docs/WEEKLY-REFRESH.md) to arm `/loop 7d /refresh-github-profile` (runs once immediately, then every 7 days). That doc is the single source for the loop setup.

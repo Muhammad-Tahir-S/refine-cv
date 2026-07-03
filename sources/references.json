@@ -42,6 +42,50 @@
       "retrieved": "2026-06-04",
       "topics": ["ats-prevalence", "context-only"],
       "note": "Use for prevalence/context only; not primary authority for writing rules."
+    },
+    {
+      "id": "toptal-resume-summary-guide",
+      "title": "How to Write a Professional Resume Summary",
+      "url": "https://www.toptal.com/career-advice/resume-summary",
+      "publisher": "Toptal Career Center",
+      "retrieved": "2026-06-04",
+      "topics": ["summary", "third-person", "problem-solution", "buzzwords-avoid"]
+    },
+    {
+      "id": "toptal-talent-faq",
+      "title": "Talent FAQ",
+      "url": "https://www.toptal.com/talent/faq",
+      "publisher": "Toptal",
+      "retrieved": "2026-06-04",
+      "topics": ["profile-detail", "profile-update", "matching-process", "staff-driven"]
+    },
+    {
+      "id": "toptal-top-3-percent",
+      "title": "Top 3% screening page",
+      "url": "https://www.toptal.com/talent",
+      "publisher": "Toptal",
+      "retrieved": "2026-06-04",
+      "topics": ["screening", "communication", "professionalism"]
+    },
+    {
+      "id": "toptal-matching-process-pdf",
+      "title": "Job Application Matching Process Handbook for Developers",
+      "url": "sources/toptal-guides/pdf/Job Application Matching Process Handbook for Developers.pdf",
+      "extract": "sources/toptal-guides/job-application-matching-handbook.md",
+      "publisher": "Toptal",
+      "retrieved": "2026-06-29",
+      "topics": ["application-matching", "pitches", "profile-requirements", "application-questions"],
+      "note": "Primary Toptal authority for pitches and applications. See sources/toptal-references.json priority 1."
+    },
+    {
+      "id": "toptal-profile-creation-guide-pdf",
+      "title": "Developer - Profile Creation Guide",
+      "url": "sources/toptal-guides/pdf/Developer - Profile Creation Guide.pdf",
+      "extract": "sources/toptal-guides/developer-profile-creation-guide.md",
+      "publisher": "Toptal",
+      "retrieved": "2026-06-29",
+      "topics": ["profile-creation", "developer-guide", "portfolio", "skills"],
+      "note": "Primary Toptal authority for profile enhancement. OCR extract in sources/toptal-guides/developer-profile-creation-guide.md."
     }
   ]
 }

@@ -30,7 +30,9 @@ pnpm build
 4. `pnpm index-github`
 5. In Cursor chat, ask the agent to **onboard** (questionnaire, enhanced base CV)
 6. Per application: `/tailor-cv` + paste job description → `pnpm render-cv jobs/.../tailored-cv.md`
-7. After first index: `/loop 7d /refresh-github-profile`
+7. Toptal applications: `/toptal-pitch` + paste JD → copy `jobs/.../pitch.md`
+8. Periodic Toptal profile refresh: `/enhance-toptal-profile` + paste current profile
+9. After first index: `/loop 7d /refresh-github-profile`
 
 ## CLI commands
 
@@ -41,6 +43,7 @@ pnpm build
 | `pnpm list-repos` | Repos you pushed to (~10 years) → `profile/github-repo-candidates.md` |
 | `pnpm index-github` | Index selected repos → `github-index.json` + summary |
 | `pnpm validate` | Check onboarding readiness |
+| `pnpm extract-toptal-guides` | Re-extract matching handbook raw text from PDF |
 | `pnpm typecheck` | TypeScript check |
 
 ### GitHub authentication
@@ -84,11 +87,14 @@ The renderer strips internal evidence tags, uses a single-column ATS-friendly te
 |------|---------|
 | `src/` | TypeScript CLI and libraries |
 | `templates/cv/` | Print CSS for PDF export |
-| `sources/cv-best-practices.md` | Rules with citation IDs |
+| `sources/cv-best-practices.md` | CV rules with citation IDs |
+| `sources/toptal-best-practices.md` | Toptal profile and pitch rules (PDF-first) |
+| `sources/toptal-guides/` | Official Toptal PDF extracts (priority 1 sources) |
 | `profile/base-cv.pdf` | Canonical CV |
+| `profile/toptal-profile-*.md` | Toptal profile snapshot and enhancements |
 | `profile/github-repo-candidates.md` | Repo picker output from `list-repos` |
 | `config/github-repos.json` | Username + repos to index |
-| `jobs/` | One folder per application |
+| `jobs/` | One folder per application (CV, pitch, match reports) |
 | `.cursor/skills/` | Agent skills |
 
 ## Cursor commands
@@ -96,6 +102,8 @@ The renderer strips internal evidence tags, uses a single-column ATS-friendly te
 | Command | Action |
 |---------|--------|
 | `/tailor-cv` | Paste JD → tailored CV + match report + PDF |
+| `/toptal-pitch` | Paste Toptal JD → third-person pitch + pitch match report |
+| `/enhance-toptal-profile` | Paste current Toptal profile → enhanced bio/skills/portfolio |
 | `/refresh-github-profile` | Run `pnpm index-github` |
 
 Weekly refresh (after first successful index):

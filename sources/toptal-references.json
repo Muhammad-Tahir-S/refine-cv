@@ -1,0 +1,93 @@
+{
+  "version": 2,
+  "retrieved": "2026-06-29",
+  "priorityNote": "Lower priority number = higher authority. Agents must load priority 1 sources before priority 2.",
+  "sources": [
+    {
+      "id": "toptal-matching-process-pdf",
+      "priority": 1,
+      "title": "Job Application Matching Process Handbook for Developers",
+      "url": "sources/toptal-guides/pdf/Job Application Matching Process Handbook for Developers.pdf",
+      "extract": "sources/toptal-guides/job-application-matching-handbook.md",
+      "publisher": "Toptal",
+      "retrieved": "2026-06-29",
+      "topics": [
+        "matching-process",
+        "availability-requests",
+        "job-application",
+        "application-questions",
+        "pitches",
+        "strong-applications",
+        "weak-applications",
+        "profile-requirements",
+        "skills-overlap",
+        "portfolio-minimums",
+        "overlap-hours"
+      ],
+      "note": "Primary authority for pitches and application workflow."
+    },
+    {
+      "id": "toptal-profile-creation-guide-pdf",
+      "priority": 1,
+      "title": "Developer - Profile Creation Guide",
+      "url": "sources/toptal-guides/pdf/Developer - Profile Creation Guide.pdf",
+      "extract": "sources/toptal-guides/developer-profile-creation-guide.md",
+      "publisher": "Toptal",
+      "retrieved": "2026-06-29",
+      "topics": [
+        "profile-creation",
+        "developer-guide",
+        "portfolio",
+        "skills",
+        "work-experience",
+        "external-profiles"
+      ],
+      "note": "Primary authority for baseline profile enhancement. Full OCR extract in developer-profile-creation-guide.md."
+    },
+    {
+      "id": "toptal-resume-summary",
+      "priority": 2,
+      "title": "How to Write a Professional Resume Summary: A Guide for Tech Professionals",
+      "url": "https://www.toptal.com/resume/en/career-center/how-to-write-a-professional-resume-summary-a-guide-for-tech-professionals",
+      "publisher": "Toptal Career Center",
+      "retrieved": "2026-06-29",
+      "topics": [
+        "third-person",
+        "summary-length",
+        "technical-identity",
+        "keywords",
+        "anti-buzzwords",
+        "measurable-impact"
+      ],
+      "note": "Supplemental — defer to matching handbook for pitch length when they differ."
+    },
+    {
+      "id": "toptal-talent-faq",
+      "priority": 2,
+      "title": "Talent Frequently Asked Questions (FAQs)",
+      "url": "https://www.toptal.com/freelance-jobs/faq",
+      "publisher": "Toptal",
+      "retrieved": "2026-06-29",
+      "topics": [
+        "profile-maintenance",
+        "matching-process",
+        "portfolio",
+        "communication"
+      ]
+    },
+    {
+      "id": "toptal-top-3-percent",
+      "priority": 2,
+      "title": "Why 3%: How Toptal Finds Top Talent",
+      "url": "https://www.toptal.com/top-3-percent",
+      "publisher": "Toptal",
+      "retrieved": "2026-06-29",
+      "topics": [
+        "screening",
+        "communication",
+        "professionalism",
+        "expertise-depth"
+      ]
+    }
+  ]
+}

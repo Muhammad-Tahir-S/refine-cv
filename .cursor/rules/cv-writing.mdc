@@ -8,14 +8,9 @@ alwaysApply: false
 
 When editing or generating CVs, cover letters, match reports, or job-specific outputs in this repository:
 
-1. **Read** [sources/cv-best-practices.md](../../sources/cv-best-practices.md) and cite source IDs from [sources/references.json](../../sources/references.json) when explaining rules.
-2. **Load profile evidence** before tailoring:
-   - `profile/base-cv-enhanced.md` (fallback: `profile/base-cv.md`)
-   - `profile/github-summary.md`
-   - `profile/questionnaire.md`
-3. **Never invent** employers, titles, dates, technologies, or metrics. Unsupported items go in `profile/gap-report.md` or the job’s `match-report.md`.
-4. **Respect red lines** in `profile/questionnaire.md` and `config/github-repos.json` (only indexed, permitted repos).
-5. **Job outputs** live under `jobs/YYYY-MM-DD-company-role/` with `tailored-cv.md`, `match-report.md`, and optional `cover-letter-hooks.md`.
-6. **Primary authorities** are university career centers; do not treat SEO blogs, LinkedIn posts, or Quora as primary sources.
+1. **Load the authority first:** [sources/cv-best-practices.md](../../sources/cv-best-practices.md) is the **single source for CV rules**; follow it and cite source IDs from [sources/references.json](../../sources/references.json). Primary authorities are university career centers — not SEO blogs or social posts.
+2. **Load profile evidence:** `profile/base-cv-enhanced.md` (fallback `profile/base-cv.md`), `profile/github-summary.md`, `profile/questionnaire.md`.
+3. **Guardrails (enforced at edit time):** never invent employers, titles, dates, technologies, or metrics — unsupported items go to `profile/gap-report.md` or the job’s `match-report.md`; respect red lines in `profile/questionnaire.md` and `config/github-repos.json` (only indexed, permitted repos).
+4. **Job outputs** live under `jobs/YYYY-MM-DD-company-role/`.
 
-For the full tailoring workflow, use the **tailor-cv** skill (`.cursor/skills/tailor-cv/SKILL.md`) or `/tailor-cv` command.
+For the full workflow use the **tailor-cv** skill (`.cursor/skills/tailor-cv/SKILL.md`) or `/tailor-cv`; for first-time setup use **onboard-profile**.

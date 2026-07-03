@@ -21,6 +21,10 @@ Thumbs.db
 
 # Optional local overrides (untracked personal notes)
 profile/local-notes.md
+profile/toptal-profile-current.md
+sources/toptal-guides/_matching-handbook-raw.txt
+sources/toptal-guides/_profile-guide-raw.txt
+sources/toptal-guides/pdf/pages/
 
 # Job folders may contain employer-specific drafts — track by default;
 # uncomment to ignore all application artifacts:

@@ -20,6 +20,26 @@ export function runValidateSetup(): number {
   if (existsSync(paths.tailorSkill)) check("ok", "tailor-cv skill", counts);
   else check("fail", "missing tailor-cv skill", counts);
 
+  if (existsSync(paths.toptalBestPractices)) check("ok", "sources/toptal-best-practices.md", counts);
+  else check("warn", "missing sources/toptal-best-practices.md", counts);
+
+  if (existsSync(paths.toptalMatchingHandbook))
+    check("ok", "toptal-guides/job-application-matching-handbook.md", counts);
+  else check("fail", "missing toptal matching handbook extract", counts);
+
+  if (existsSync(paths.toptalProfileGuide))
+    check("ok", "toptal-guides/developer-profile-creation-guide.md", counts);
+  else check("fail", "missing toptal profile creation guide extract", counts);
+
+  if (existsSync(paths.enhanceToptalProfileSkill)) check("ok", "enhance-toptal-profile skill", counts);
+  else check("warn", "missing enhance-toptal-profile skill", counts);
+
+  if (existsSync(paths.generateToptalPitchSkill)) check("ok", "generate-toptal-pitch skill", counts);
+  else check("warn", "missing generate-toptal-pitch skill", counts);
+
+  if (existsSync(paths.toptalProfileCurrent)) check("ok", "profile/toptal-profile-current.md", counts);
+  else check("warn", "no Toptal profile snapshot — paste via /enhance-toptal-profile", counts);
+
   if (existsSync(paths.baseCvPdf)) check("ok", "profile/base-cv.pdf", counts);
   else check("warn", "profile/base-cv.pdf not found", counts);
 

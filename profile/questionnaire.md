@@ -1,14 +1,14 @@
 # Profile questionnaire
 
-Updated **2026-06-04** (user confirmations).
+Updated **2026-07-03** (Full-Stack Engineer baseline).
 
 ## Identity and targeting
 
 - **Legal name (as on CV):** Muhammad-Tahir Sanuth
 - **Location / timezone:** Lagos, Nigeria (Remote)
 - **Work authorization:** Not relevant / not listed on applications
-- **Official title at Codygo:** **Front-End Engineer** (senior targeting via summary/tailoring only)
-- **Target role family:** Frontend Engineer / Senior Frontend Engineer (applications)
+- **Official title at Codygo:** **Full-Stack Engineer**
+- **Target role family:** Full-Stack Engineer / Senior Full-Stack Engineer; Frontend Engineer when JD is front-end IC–focused
 - **Industries to emphasize:** B2B SaaS, marketing/analytics, cloud/infra UIs, AI-enabled web apps, workflow builders
 
 ## Employer mapping (GitHub org → role)
@@ -35,6 +35,7 @@ Updated **2026-06-04** (user confirmations).
 
 - **Metrics:** Built **full-stack internal work-tracking dashboard in two weeks**.
 - **Overlap:** Managed **Codygo and Tempo full-time** concurrently.
+- **Location on CV:** Canada (Remote)
 
 ### Collabscape (Jul 2024 – Jul 2025)
 
@@ -56,6 +57,7 @@ Updated **2026-06-04** (user confirmations).
 
 - No proprietary code in outputs
 - No internal ticket IDs unless approved per job
+- Do not claim Addressable production-fix specifics (tenant switching, export limits) on baseline CV or Toptal unless re-approved per application
 
 ## Format preferences
 

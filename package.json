@@ -11,6 +11,7 @@
     "list-repos": "pnpm build && node dist/bin/list-repos.js",
     "validate": "pnpm build && node dist/bin/validate-setup.js",
     "render-cv": "pnpm build && node dist/bin/render-cv.js",
+    "extract-toptal-guides": "pnpm build && node dist/bin/extract-toptal-guides.js",
     "setup:pdf": "pnpm exec puppeteer browsers install chrome",
     "postinstall": "pnpm exec puppeteer browsers install chrome",
     "auth:github": "gh auth login",
