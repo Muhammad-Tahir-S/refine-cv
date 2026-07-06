@@ -1,121 +1,270 @@
 # refine-cv
 
-Private workflow for tailoring your CV to job descriptions using **citable** ATS and human-review best practices, a local profile (PDF + questionnaire), and incremental GitHub evidence from repos you choose.
+CV tailoring workflow with **citable** ATS best practices, local profile evidence, and optional GitHub indexing — built as modular **feature packs** for Cursor.
 
-Built with **TypeScript** and **pnpm** (no Python or shell scripts).
+TypeScript + pnpm. No Python.
+
+## Contents
+
+- [How it works](#how-it-works)
+- [Privacy first](#privacy-first)
+- [Prerequisites](#prerequisites)
+- [5-minute quickstart](#5-minute-quickstart)
+- [The setup wizard](#the-setup-wizard)
+- [Feature packs](#feature-packs)
+- [Cursor commands (agent workflows)](#cursor-commands-agent-workflows)
+- [CLI reference](#cli-reference)
+- [Directory layout](#directory-layout)
+- [Data files reference](#data-files-reference)
+- [Everyday workflows](#everyday-workflows)
+- [GitHub authentication](#github-authentication)
+- [Toptal pack — bring your own PDFs](#toptal-pack--bring-your-own-pdfs)
+- [Updating tooling](#updating-tooling)
+- [Troubleshooting](#troubleshooting)
+
+## How it works
+
+1. **You provide evidence**: your master CV (PDF or pasted text), a short questionnaire, and optionally your GitHub history.
+2. **`pnpm setup`** handles the mechanical steps: pack selection, CV extraction, GitHub auth + repo picking + indexing.
+3. **The Cursor agent** handles the judgment steps: filling questionnaire gaps (`/onboard`), producing an enhanced base CV and gap report, then tailoring per job (`/tailor-cv`) or generating Toptal pitches (`/toptal-pitch`).
+4. Every claim in generated output traces back to your evidence files — the writing rules forbid inventing employers, dates, metrics, or technologies, and unsupported items land in a gap report instead of your CV.
+
+Agent behavior is packaged as **feature packs**. Canonical skills/commands/rules live in `packs/<name>/cursor/`; `pnpm setup` copies only the packs you selected into `.cursor/`, so the agent never sees (or suggests) workflows you didn't install.
+
+## Privacy first
+
+**Keep your copy private.** This repo is designed so personal data stays local:
+
+- `profile/` and `config/` use **gitignore allowlists**: everything is ignored except `profile/ONBOARDING.md`, `profile/questionnaire.example.md`, and `config/*.example.json`. New files you (or the tools) drop there are ignored by default.
+- `jobs/` (per-application drafts) and user-supplied Toptal PDFs/extracts are also gitignored.
+- Use a **private** GitHub repository.
+- Private GitHub repos are indexed for **metadata only** (commit subjects, PR titles) — never paste proprietary code into outputs.
+- **Git history warning:** gitignore only protects future commits. If personal files were ever committed to your copy, they remain in git history — before making a repo public or turning it into a template, start from a fresh history rather than relying on deletions.
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) 20+
+- [Node.js](https://nodejs.org/) 18+
 - [pnpm](https://pnpm.io/): `npm install -g pnpm`
-- GitHub auth: `GITHUB_TOKEN` in `.env` **or** [GitHub CLI](https://cli.github.com/) (`gh auth login`)
+- [Cursor](https://cursor.com/) (v1 targets Cursor's `.cursor/` skills/commands/rules)
+- Optional, for the github-evidence pack: a `GITHUB_TOKEN` in `.env` or the [GitHub CLI](https://cli.github.com/) (`gh`)
+- Optional, for the tailor-cv pack: ~170 MB disk for a Puppeteer-managed Chrome (PDF rendering; installed by the wizard, not on `pnpm install`)
 
-**Security:** Keep this repository **private**. It may contain PII (CV, questionnaire, job descriptions).
-
-## Setup
-
-Requires **Node 18+** (see `.nvmrc` for v22).
+## 5-minute quickstart
 
 ```bash
-nvm use   # optional
 pnpm install
-pnpm build
+pnpm setup
 ```
 
-## Quick start
+Follow the wizard (details below), then open Cursor chat and run `/onboard`. After onboarding, tailor per application with `/tailor-cv`.
 
-1. Add your master CV: `profile/base-cv.pdf`
-2. `pnpm extract-cv`
-3. `pnpm list-repos` — pick repos → add to `config/github-repos.json`
-4. `pnpm index-github`
-5. In Cursor chat, ask the agent to **onboard** (questionnaire, enhanced base CV)
-6. Per application: `/tailor-cv` + paste job description → `pnpm render-cv jobs/.../tailored-cv.md`
-7. Toptal applications: `/toptal-pitch` + paste JD → copy `jobs/.../pitch.md`
-8. Periodic Toptal profile refresh: `/enhance-toptal-profile` + paste current profile
-9. After first index: `/loop 7d /refresh-github-profile`
-
-## CLI commands
-
-| Command | Description |
-|---------|-------------|
-| `pnpm extract-cv` | PDF → `profile/base-cv.md` |
-| `pnpm render-cv` | Markdown CV → ATS-friendly PDF |
-| `pnpm list-repos` | Repos you pushed to (~10 years) → `profile/github-repo-candidates.md` |
-| `pnpm index-github` | Index selected repos → `github-index.json` + summary |
-| `pnpm validate` | Check onboarding readiness |
-| `pnpm extract-toptal-guides` | Re-extract matching handbook raw text from PDF |
-| `pnpm typecheck` | TypeScript check |
-
-### GitHub authentication
-
-Create `.env` (gitignored):
+Check readiness anytime:
 
 ```bash
-GITHUB_TOKEN=ghp_...
+pnpm validate
 ```
 
-Or log in via the CLI:
+## The setup wizard
 
-```bash
-pnpm auth:github
-```
+`pnpm setup` is the single entry point for all mechanical setup. It is safe to re-run at any time — completed steps are detected and skipped, and your answers accumulate in `config/refine-cv.json`. Press `Ctrl+C` to cancel cleanly at any prompt.
 
-After login, `pnpm list-repos` and `pnpm index-github` use `gh auth token` automatically.
+### Step 1 — Feature selection
 
-### PDF export
+Checkbox picker of the packs below. Core is always installed; the recommended packs are pre-checked on first run, and your current selection is pre-checked on re-runs. The wizard then syncs `.cursor/` from `packs/` and seeds `profile/questionnaire.md` from the example template if missing.
 
-Render a tailored or base CV to PDF:
+Anything you added to `.cursor/` yourself (custom skills, commands, rules) is left untouched by the sync — only pack-owned files are overwritten.
 
-```bash
-pnpm render-cv jobs/2026-06-04-company-role/tailored-cv.md
-pnpm render-cv profile/base-cv-enhanced.md --out profile/base-cv-preview.pdf
-```
+### Step 2 — PDF renderer (tailor-cv pack only)
 
-First-time setup for PDF export (downloads Chromium for Puppeteer):
+Offers to install the Chrome build Puppeteer needs for `pnpm render-cv` (~170 MB, skipped instantly if already cached). Decline and run `pnpm setup:pdf` later if you prefer.
 
-```bash
-pnpm setup:pdf
-```
+### Step 3 — Toptal guides (toptal pack only)
 
-This also runs automatically after `pnpm install`.
+Checks for the two official Toptal PDFs in `sources/toptal-guides/pdf/` (exact filenames listed in the warning and [below](#toptal-pack--bring-your-own-pdfs)). If present, offers to run the extraction; if absent, the pack installs in **degraded mode** — Toptal skills fall back to `sources/toptal-best-practices.md` until you add the PDFs.
 
-The renderer strips internal evidence tags, uses a single-column ATS-friendly template (`templates/cv/resume.css`), and writes selectable text (not image-only). Compare `profile/base-cv-preview.pdf` with `profile/base-cv.pdf` when calibrating layout.
+### Step 4 — CV intake
+
+Three options:
+
+- **Path to a PDF** — copied to `profile/base-cv.pdf`, extracted to `profile/base-cv.md`, preview shown for confirmation
+- **Paste text** — opens your `$EDITOR`; the pasted text is written to `profile/base-cv.md` (no PDF needed)
+- **Skip** — add `profile/base-cv.pdf` later and run `pnpm extract-cv`
+
+### Step 5 — GitHub connect (github-evidence pack only)
+
+- **Auth**: uses an existing token if found (`GITHUB_TOKEN` env, `.env`, or `gh auth token`); otherwise offers to run `gh auth login` right there, or to skip
+- **Repo picker**: fetches every repo you've pushed to in the last 10 years (owned, contributed, private if the token allows) and presents an interactive checkbox list; selections are written to `config/github-repos.json`
+- **Index**: offers to run `pnpm index-github` immediately; if indexing fails (network, rate limit), your selection is saved and you can re-run `pnpm index-github` alone
+
+### Step 6 — Handoff and validation
+
+Prints your next steps (which depend on installed packs) and runs `pnpm validate`. Warnings about `/onboard` outputs are expected until you complete agent onboarding.
+
+### Wizard flags
+
+| Invocation | Behavior |
+|------------|----------|
+| `pnpm setup` | Full interactive wizard |
+| `pnpm setup --yes` | Non-interactive: keeps current pack selection (or defaults + recommended on first run), re-syncs `.cursor/`, extracts CV if `profile/base-cv.pdf` exists, **never** guesses repo selections |
+| `pnpm setup --add <pack>` | Install one pack and sync `.cursor/` (installs Chrome when adding tailor-cv) |
+| `pnpm setup --remove <pack>` | Uninstall one pack and remove its `.cursor/` assets (core cannot be removed) |
+
+## Feature packs
+
+| Pack | What it adds | Default |
+|------|--------------|---------|
+| **core** | Onboarding, CV extraction, questionnaire, CV writing rules | Always |
+| **github-evidence** | Repo indexing, weekly refresh skill | Recommended |
+| **tailor-cv** | JD tailoring, match reports, PDF export | Recommended |
+| **toptal** | Profile enhancement + job pitches (BYO PDF guides) | Opt-in |
+
+Packs are defined in [`packs.json`](packs.json) (the single source of truth — `pnpm validate` checks assets straight from it). Canonical pack assets live in `packs/<name>/cursor/`; `pnpm setup` copies selected packs into `.cursor/`. See [docs/PACKS.md](docs/PACKS.md) for per-pack details and how to add a custom pack.
+
+Installed packs are recorded in `config/refine-cv.json` (gitignored).
+
+## Cursor commands (agent workflows)
+
+Available commands depend on installed packs:
+
+| Command | Pack | What the agent does |
+|---------|------|---------------------|
+| `/onboard` | core | Asks only the questionnaire gaps not answerable from your CV/GitHub, writes `profile/questionnaire.md`, `profile/base-cv-enhanced.md` (stronger bullets, same facts), and `profile/gap-report.md` |
+| `/tailor-cv` | tailor-cv | Paste a JD → `jobs/YYYY-MM-DD-company-role/` with `tailored-cv.md`, `match-report.md`, optional cover-letter hooks, and a rendered PDF |
+| `/toptal-pitch` | toptal | Paste a Toptal JD → third-person application pitch + pitch match report |
+| `/enhance-toptal-profile` | toptal | Paste your current Toptal profile → enhanced bio/skills/portfolio + gap report |
+| `/refresh-github-profile` | github-evidence | Re-runs the index, summarizes deltas, appends to `profile/refresh-log.md` |
+
+Weekly refresh loop (after the first successful index): `/loop 7d /refresh-github-profile` — see [docs/WEEKLY-REFRESH.md](docs/WEEKLY-REFRESH.md).
+
+## CLI reference
+
+All scripts build first, so they always run current code.
+
+| Command | Pack | Description |
+|---------|------|-------------|
+| `pnpm setup [--yes] [--add <pack>] [--remove <pack>]` | — | Setup wizard (see [flags](#wizard-flags)) |
+| `pnpm validate` | core | Pack-aware readiness check; exits non-zero on failures (warnings are informational) |
+| `pnpm extract-cv` | core | `profile/base-cv.pdf` → `profile/base-cv.md` |
+| `pnpm list-repos [-u <login>] [-y <years>] [--public-only]` | github-evidence | Discover candidate repos → `profile/github-repo-candidates.md` |
+| `pnpm index-github` | github-evidence | Incrementally index repos from `config/github-repos.json` → `profile/github-index.json` + `profile/github-summary.md` |
+| `pnpm render-cv <input.md> [-o out.pdf]` | tailor-cv | Markdown CV → ATS-friendly PDF |
+| `pnpm setup:pdf` | tailor-cv | Install the Puppeteer-managed Chrome (idempotent) |
+| `pnpm extract-toptal-guides [--force]` | toptal | Extract user-supplied PDFs → structured markdown (`--force` overwrites existing extracts) |
+| `pnpm auth:github` | github-evidence | Shortcut for `gh auth login` |
+| `pnpm typecheck` / `pnpm build` | — | TypeScript check / compile to `dist/` |
 
 ## Directory layout
 
-| Path | Purpose |
-|------|---------|
-| `src/` | TypeScript CLI and libraries |
-| `templates/cv/` | Print CSS for PDF export |
-| `sources/cv-best-practices.md` | CV rules with citation IDs |
-| `sources/toptal-best-practices.md` | Toptal profile and pitch rules (PDF-first) |
-| `sources/toptal-guides/` | Official Toptal PDF extracts (priority 1 sources) |
-| `profile/base-cv.pdf` | Canonical CV |
-| `profile/toptal-profile-*.md` | Toptal profile snapshot and enhancements |
-| `profile/github-repo-candidates.md` | Repo picker output from `list-repos` |
-| `config/github-repos.json` | Username + repos to index |
-| `jobs/` | One folder per application (CV, pitch, match reports) |
-| `.cursor/skills/` | Agent skills |
+| Path | Purpose | Committed? |
+|------|---------|-----------|
+| `packs/` | Canonical pack assets (skills, commands, rules) — edit here | Yes |
+| `packs.json` | Pack manifest: assets, sources, scripts per pack | Yes |
+| `src/` | CLI tooling (TypeScript) | Yes |
+| `sources/` | Citable writing rules and reference extracts | Yes (except Toptal extracts) |
+| `templates/cv/` | PDF rendering template (CSS) | Yes |
+| `docs/` | Per-topic docs | Yes |
+| `.cursor/` | Synced from `packs/` by setup — agent reads from here | No (regenerated) |
+| `profile/` | Your CV, questionnaire, GitHub index | No (allowlisted examples only) |
+| `config/` | Repo selection + installed-pack state | No (allowlisted examples only) |
+| `jobs/` | Per-application outputs | No |
 
-## Cursor commands
+## Data files reference
 
-| Command | Action |
-|---------|--------|
-| `/tailor-cv` | Paste JD → tailored CV + match report + PDF |
-| `/toptal-pitch` | Paste Toptal JD → third-person pitch + pitch match report |
-| `/enhance-toptal-profile` | Paste current Toptal profile → enhanced bio/skills/portfolio |
-| `/refresh-github-profile` | Run `pnpm index-github` |
+Files created and maintained on your machine (all gitignored):
 
-Weekly refresh (after first successful index):
+| File | Written by | Contents |
+|------|-----------|----------|
+| `config/refine-cv.json` | `pnpm setup` | Installed packs, setup progress flags (`cvIntakeCompleted`, `githubConnectCompleted`) |
+| `config/github-repos.json` | setup wizard (or by hand from the example) | GitHub username, repos to index, indexing options |
+| `profile/base-cv.pdf` | you (via wizard) | Master CV PDF |
+| `profile/base-cv.md` | `pnpm extract-cv` or pasted-text intake | Extracted CV text (header marker identifies real extracts) |
+| `profile/questionnaire.md` | seeded by setup, filled by `/onboard` | Targeting, metrics, red lines, preferences |
+| `profile/base-cv-enhanced.md` | `/onboard` | Enhanced base CV — the source for all tailoring |
+| `profile/gap-report.md` | `/onboard` | Unsupported/missing claims that need your input |
+| `profile/github-index.json` | `pnpm index-github` | Raw commit/PR metadata per repo |
+| `profile/github-summary.md` | `pnpm index-github` | Human-readable evidence summary with draft bullets |
+| `profile/index-state.json` | `pnpm index-github` | Incremental-index watermarks |
+| `profile/github-repo-candidates.md` | `pnpm list-repos` | Discovered repos for selection |
+| `profile/refresh-log.md` | `/refresh-github-profile` | One row per refresh run |
+| `profile/toptal-profile-*.md` | `/enhance-toptal-profile` | Toptal profile snapshot, enhanced version, gap report |
+| `jobs/YYYY-MM-DD-company-role/` | `/tailor-cv`, `/toptal-pitch` | Per-application outputs |
 
+## Everyday workflows
+
+### First-time onboarding
+
+1. `pnpm install && pnpm setup`
+2. In Cursor chat: `/onboard` — answer the questionnaire gaps; review `profile/gap-report.md`
+3. `pnpm validate` — expect all OK (Toptal snapshot warning is fine until you use that pack)
+
+### Per job application
+
+1. `/tailor-cv`, paste the job description
+2. Review `jobs/<date-company-role>/match-report.md` — especially any `needs-your-confirmation` items
+3. The agent renders the PDF via `pnpm render-cv`; check it before sending
+
+### Toptal
+
+- `/enhance-toptal-profile` with your current profile pasted — apply the top changes on Toptal
+- `/toptal-pitch` per job application
+
+### Keeping GitHub evidence fresh
+
+- One-off: `/refresh-github-profile` or `pnpm index-github`
+- Recurring: `/loop 7d /refresh-github-profile` (see [docs/WEEKLY-REFRESH.md](docs/WEEKLY-REFRESH.md))
+
+## GitHub authentication
+
+Token resolution order (used by all GitHub tooling): `GITHUB_TOKEN` environment variable → `GITHUB_TOKEN=` line in `.env` → `gh auth token`.
+
+Options:
+
+- **GitHub CLI (recommended):** `gh auth login` — the wizard can run this for you
+- **Personal access token:** create a token with `repo` read scope, put `GITHUB_TOKEN=ghp_...` in `.env` (gitignored)
+- **No auth:** `pnpm list-repos --public-only` works without a token but misses private/contributed repos
+
+## Toptal pack — bring your own PDFs
+
+The Toptal pack ships **extraction tooling only** — the official guides are not redistributed. Drop your own copies into `sources/toptal-guides/pdf/` with these **exact filenames**:
+
+- `Job Application Matching Process Handbook for Developers.pdf`
+- `Developer - Profile Creation Guide.pdf`
+
+Then run:
+
+```bash
+pnpm extract-toptal-guides
 ```
-/loop 7d /refresh-github-profile
+
+Without the PDFs the pack works in **degraded mode**: skills fall back to `sources/toptal-best-practices.md` and note the reduced basis in their outputs. PDFs and extracts are gitignored. See [sources/toptal-guides/README.md](sources/toptal-guides/README.md).
+
+## Updating tooling
+
+Pull upstream template/tooling changes without touching user data (all user data lives in gitignored paths):
+
+```bash
+git pull origin main
+pnpm install
+pnpm setup --yes   # re-sync .cursor/ from packs/
 ```
 
-## Onboarding
+If you customized skills inside `packs/`, review diffs before syncing — pack-owned files in `.cursor/` are overwritten on sync (your own additions to `.cursor/` are preserved).
 
-See [profile/ONBOARDING.md](profile/ONBOARDING.md). Run `pnpm validate` to check progress.
+## Troubleshooting
 
-## Privacy note (private repos)
+| Symptom | Fix |
+|---------|-----|
+| `/onboard` (or another command) missing in Cursor | The pack isn't installed or `.cursor/` isn't synced — run `pnpm setup` (or `pnpm setup --yes`) |
+| `pnpm validate` fails with missing skill/command/rule | Same as above: re-run `pnpm setup --yes` |
+| `render-cv` errors about a missing browser | `pnpm setup:pdf` |
+| Wizard says Toptal PDFs missing but you added them | Filenames must match exactly — see [BYO PDFs](#toptal-pack--bring-your-own-pdfs) |
+| CV extraction looks garbled | PDF text layers vary; choose "Paste text" in the wizard's CV intake instead, or hand-edit `profile/base-cv.md` |
+| `index-github` fails (rate limit/network) | Repo selection is already saved — just re-run `pnpm index-github` |
+| `gh auth login` unavailable | Install the [GitHub CLI](https://cli.github.com/) or use a `GITHUB_TOKEN` in `.env` |
+| Private repos missing from the repo picker | Your token lacks `repo` scope, or you used `--public-only` |
+| Accidentally edited `.cursor/` skills | Edits to pack-owned files are lost on next sync — make the change in `packs/<name>/cursor/` instead |
+| Want to start over | Delete `config/refine-cv.json` and re-run `pnpm setup` (your profile data is untouched) |
 
-Private and employer repos can be indexed for **metadata only** (commit subjects, PR titles, languages, themes). Tailored outputs must **not** include proprietary source code — see `profile/questionnaire.md`.
+## Onboarding reference
+
+See [profile/ONBOARDING.md](profile/ONBOARDING.md) for the condensed two-step guide (mechanical: `pnpm setup`; agent: `/onboard`).

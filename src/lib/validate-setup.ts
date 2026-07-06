@@ -1,109 +1,202 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { paths } from "./paths.js";
+import { join } from "node:path";
+import { paths, ROOT, cursorSkill } from "./paths.js";
 import { loadGitHubConfig } from "./config.js";
+import { isBaseCvExtracted } from "./pdf/extract-cv.js";
+import {
+  isQuestionnaireUntouched,
+  loadPacksManifest,
+  loadRefineCvState,
+  resolvePackDependencies,
+  type PacksManifest,
+} from "./packs.js";
 
 type Status = "ok" | "warn" | "fail";
+type Counts = { ok: number; warn: number; fail: number };
 
-function check(status: Status, msg: string, counts: { ok: number; warn: number; fail: number }) {
+function check(status: Status, msg: string, counts: Counts) {
   const label = status === "ok" ? "OK  " : status === "warn" ? "WARN" : "FAIL";
   console.log(`${label} ${msg}`);
   counts[status] += 1;
 }
 
+/**
+ * Manifest-driven check of every installed pack's Cursor assets and source
+ * files, so packs.json stays the single source of truth.
+ */
+function checkPackAssets(
+  manifest: PacksManifest,
+  installedPacks: string[],
+  counts: Counts,
+): void {
+  for (const packId of installedPacks) {
+    const pack = manifest.packs[packId];
+    if (!pack) {
+      check("warn", `unknown pack "${packId}" in config/refine-cv.json — not in packs.json`, counts);
+      continue;
+    }
+
+    for (const skill of pack.cursor.skills) {
+      if (existsSync(cursorSkill(skill))) check("ok", `[${packId}] skill: ${skill}`, counts);
+      else check("fail", `[${packId}] missing skill "${skill}" — run pnpm setup`, counts);
+    }
+    for (const command of pack.cursor.commands) {
+      const file = join(ROOT, ".cursor", "commands", `${command}.md`);
+      if (existsSync(file)) check("ok", `[${packId}] command: /${command}`, counts);
+      else check("fail", `[${packId}] missing command "/${command}" — run pnpm setup`, counts);
+    }
+    for (const rule of pack.cursor.rules) {
+      const file = join(ROOT, ".cursor", "rules", `${rule}.mdc`);
+      if (existsSync(file)) check("ok", `[${packId}] rule: ${rule}`, counts);
+      else check("fail", `[${packId}] missing rule "${rule}" — run pnpm setup`, counts);
+    }
+    for (const source of pack.sources) {
+      if (existsSync(join(ROOT, source))) check("ok", `[${packId}] source: ${source}`, counts);
+      else {
+        const status: Status = packId === "core" ? "fail" : "warn";
+        check(status, `[${packId}] missing source: ${source}`, counts);
+      }
+    }
+  }
+}
+
 export function runValidateSetup(): number {
-  const counts = { ok: 0, warn: 0, fail: 0 };
+  const counts: Counts = { ok: 0, warn: 0, fail: 0 };
+  const state = loadRefineCvState();
 
-  if (existsSync(paths.cvBestPractices)) check("ok", "sources/cv-best-practices.md", counts);
-  else check("fail", "missing sources/cv-best-practices.md", counts);
+  let manifest: PacksManifest;
+  try {
+    manifest = loadPacksManifest();
+    check("ok", "packs.json manifest", counts);
+  } catch (err) {
+    check("fail", `packs.json: ${err instanceof Error ? err.message : err}`, counts);
+    console.log(`\nSummary: ${counts.ok} ok, ${counts.warn} warn, ${counts.fail} fail`);
+    return 1;
+  }
 
-  if (existsSync(paths.tailorSkill)) check("ok", "tailor-cv skill", counts);
-  else check("fail", "missing tailor-cv skill", counts);
+  let installed: string[];
+  if (state) {
+    installed = resolvePackDependencies(manifest, state.installedPacks);
+    check("ok", `installed packs: ${installed.join(", ")}`, counts);
+  } else {
+    installed = ["core"];
+    check("warn", "config/refine-cv.json missing — run pnpm setup (checking core only)", counts);
+  }
 
-  if (existsSync(paths.toptalBestPractices)) check("ok", "sources/toptal-best-practices.md", counts);
-  else check("warn", "missing sources/toptal-best-practices.md", counts);
+  checkPackAssets(manifest, installed, counts);
 
-  if (existsSync(paths.toptalMatchingHandbook))
-    check("ok", "toptal-guides/job-application-matching-handbook.md", counts);
-  else check("fail", "missing toptal matching handbook extract", counts);
-
-  if (existsSync(paths.toptalProfileGuide))
-    check("ok", "toptal-guides/developer-profile-creation-guide.md", counts);
-  else check("fail", "missing toptal profile creation guide extract", counts);
-
-  if (existsSync(paths.enhanceToptalProfileSkill)) check("ok", "enhance-toptal-profile skill", counts);
-  else check("warn", "missing enhance-toptal-profile skill", counts);
-
-  if (existsSync(paths.generateToptalPitchSkill)) check("ok", "generate-toptal-pitch skill", counts);
-  else check("warn", "missing generate-toptal-pitch skill", counts);
-
-  if (existsSync(paths.toptalProfileCurrent)) check("ok", "profile/toptal-profile-current.md", counts);
-  else check("warn", "no Toptal profile snapshot — paste via /enhance-toptal-profile", counts);
+  // --- core: CV intake and onboarding artifacts ---
 
   if (existsSync(paths.baseCvPdf)) check("ok", "profile/base-cv.pdf", counts);
-  else check("warn", "profile/base-cv.pdf not found", counts);
+  else check("warn", "profile/base-cv.pdf not found (fine if you pasted CV text)", counts);
 
-  if (existsSync(paths.baseCvMd)) {
-    const md = readFileSync(paths.baseCvMd, "utf8");
-    if (md.includes("Pending") || md.includes("not yet")) {
-      check("warn", "profile/base-cv.md not extracted yet — pnpm extract-cv", counts);
-    } else {
-      check("ok", "profile/base-cv.md extracted", counts);
-    }
+  if (isBaseCvExtracted()) {
+    check("ok", "profile/base-cv.md extracted", counts);
+  } else if (existsSync(paths.baseCvMd)) {
+    check("ok", "profile/base-cv.md present (manually created — no extraction marker)", counts);
   } else {
-    check("warn", "profile/base-cv.md missing", counts);
+    check("warn", "profile/base-cv.md missing — run pnpm setup or pnpm extract-cv", counts);
   }
 
-  try {
-    const cfg = loadGitHubConfig();
-    if (cfg.repos.length > 0) {
-      check("ok", `config/github-repos.json has ${cfg.repos.length} repo(s)`, counts);
-    } else {
-      check("warn", "no repos in config — pnpm list-repos then add selections", counts);
-    }
-    if (cfg.githubUsername) {
-      check("ok", `githubUsername: ${cfg.githubUsername}`, counts);
-    }
-  } catch {
-    check("fail", "invalid or missing config/github-repos.json", counts);
-  }
-
-  let hasToken = Boolean(process.env.GITHUB_TOKEN?.trim());
-  if (!hasToken) {
-    try {
-      execSync("gh auth token", { stdio: "pipe" });
-      hasToken = true;
-    } catch {
-      hasToken = false;
-    }
-  }
-
-  if (hasToken) check("ok", "GitHub token available (GITHUB_TOKEN or gh)", counts);
-  else check("warn", "no GitHub token — set GITHUB_TOKEN or run gh auth login", counts);
-
-  if (existsSync(paths.githubIndex)) {
-    try {
-      const idx = JSON.parse(readFileSync(paths.githubIndex, "utf8")) as {
-        generatedAt?: string | null;
-      };
-      if (idx.generatedAt) check("ok", "GitHub index generated", counts);
-      else check("warn", "GitHub index empty — pnpm index-github", counts);
-    } catch {
-      check("warn", "invalid github-index.json", counts);
-    }
+  if (!existsSync(paths.questionnaire)) {
+    check("warn", "profile/questionnaire.md missing — run pnpm setup, then fill via /onboard", counts);
+  } else if (isQuestionnaireUntouched()) {
+    check("warn", "profile/questionnaire.md not filled in yet — run /onboard", counts);
   } else {
-    check("warn", "GitHub index not run — pnpm index-github", counts);
+    check("ok", "profile/questionnaire.md", counts);
   }
 
   if (existsSync(paths.baseCvEnhanced)) {
     const e = readFileSync(paths.baseCvEnhanced, "utf8");
     if (e.includes("Pending onboarding")) {
-      check("warn", "onboarding not complete — ask agent to onboard", counts);
+      check("warn", "onboarding not complete — run /onboard in Cursor chat", counts);
     } else {
       check("ok", "base-cv-enhanced.md ready", counts);
     }
   } else {
-    check("warn", "base-cv-enhanced.md missing", counts);
+    check("warn", "base-cv-enhanced.md missing — run /onboard", counts);
+  }
+
+  // --- tailor-cv extras ---
+
+  if (installed.includes("tailor-cv")) {
+    let chromeInstalled = false;
+    try {
+      const out = execSync("pnpm exec puppeteer browsers list", {
+        stdio: "pipe",
+        cwd: ROOT,
+        encoding: "utf8",
+      });
+      chromeInstalled = out.includes("chrome@");
+    } catch {
+      chromeInstalled = false;
+    }
+    if (chromeInstalled) check("ok", "Chrome available for PDF rendering", counts);
+    else check("warn", "Chrome not installed for PDF rendering — run pnpm setup:pdf", counts);
+  }
+
+  // --- github-evidence extras ---
+
+  if (installed.includes("github-evidence")) {
+    try {
+      const cfg = loadGitHubConfig();
+      if (cfg.repos.length > 0) {
+        check("ok", `config/github-repos.json has ${cfg.repos.length} repo(s)`, counts);
+      } else {
+        check("warn", "no repos in config — run pnpm setup or pnpm list-repos", counts);
+      }
+      if (cfg.githubUsername) {
+        check("ok", `githubUsername: ${cfg.githubUsername}`, counts);
+      }
+    } catch {
+      check("fail", "invalid or missing config/github-repos.json", counts);
+    }
+
+    let hasToken = Boolean(process.env.GITHUB_TOKEN?.trim());
+    if (!hasToken) {
+      try {
+        execSync("gh auth token", { stdio: "pipe" });
+        hasToken = true;
+      } catch {
+        hasToken = false;
+      }
+    }
+
+    if (hasToken) check("ok", "GitHub token available (GITHUB_TOKEN or gh)", counts);
+    else check("warn", "no GitHub token — set GITHUB_TOKEN or run gh auth login", counts);
+
+    if (existsSync(paths.githubIndex)) {
+      try {
+        const idx = JSON.parse(readFileSync(paths.githubIndex, "utf8")) as {
+          generatedAt?: string | null;
+        };
+        if (idx.generatedAt) check("ok", "GitHub index generated", counts);
+        else check("warn", "GitHub index empty — pnpm index-github", counts);
+      } catch {
+        check("warn", "invalid github-index.json", counts);
+      }
+    } else {
+      check("warn", "GitHub index not run — pnpm index-github", counts);
+    }
+  }
+
+  // --- toptal extras (generated extracts are not manifest sources) ---
+
+  if (installed.includes("toptal")) {
+    if (existsSync(paths.toptalMatchingHandbook) && existsSync(paths.toptalProfileGuide)) {
+      check("ok", "Toptal guide extracts (full mode)", counts);
+    } else {
+      check(
+        "warn",
+        "Toptal guide extracts missing (degraded mode) — add PDFs to sources/toptal-guides/pdf/ and run pnpm extract-toptal-guides",
+        counts,
+      );
+    }
+
+    if (existsSync(paths.toptalProfileCurrent))
+      check("ok", "profile/toptal-profile-current.md", counts);
+    else check("warn", "no Toptal profile snapshot — paste via /enhance-toptal-profile", counts);
   }
 
   console.log(`\nSummary: ${counts.ok} ok, ${counts.warn} warn, ${counts.fail} fail`);

@@ -19,6 +19,8 @@ const PROFILE_PDF = join(PDF_DIR, "Developer - Profile Creation Guide.pdf");
 
 const MATCHING_RAW = join(GUIDES_DIR, "_matching-handbook-raw.txt");
 const PROFILE_RAW = join(GUIDES_DIR, "_profile-guide-raw.txt");
+const MATCHING_STRUCTURED = paths.toptalMatchingHandbook;
+const PROFILE_STRUCTURED = paths.toptalProfileGuide;
 
 async function extractPdf(pdfPath: string, label: string): Promise<{ text: string; numpages: number }> {
   if (!existsSync(pdfPath)) {
@@ -30,7 +32,47 @@ async function extractPdf(pdfPath: string, label: string): Promise<{ text: strin
   return { text, numpages: result.numpages };
 }
 
-export async function runExtractToptalGuides(): Promise<void> {
+function writeStructuredGuide(options: {
+  outputPath: string;
+  sourceId: string;
+  title: string;
+  pdfFilename: string;
+  extractedAt: string;
+  numpages: number;
+  text: string;
+  purpose: string;
+  force: boolean;
+}): void {
+  if (existsSync(options.outputPath) && !options.force) {
+    console.log(`Skipping ${options.outputPath} (already exists; pass --force to overwrite)`);
+    return;
+  }
+
+  const md = `# ${options.title}
+
+**Source ID:** \`${options.sourceId}\`
+**Publisher:** Toptal (Confidential & Proprietary — internal talent guide)
+**Extracted:** ${options.extractedAt.slice(0, 10)}
+**PDF:** [pdf/${options.pdfFilename}](pdf/${encodeURIComponent(options.pdfFilename)})
+**Pages:** ${options.numpages}
+
+${options.purpose}
+
+> Auto-extracted from PDF. Section headings may be imperfect; cross-check with the PDF when precision matters.
+
+---
+
+## Extracted content
+
+${options.text}
+`;
+
+  writeFileSync(options.outputPath, md);
+  console.log(`Wrote ${options.outputPath}`);
+}
+
+export async function runExtractToptalGuides(options?: { force?: boolean }): Promise<void> {
+  const force = options?.force ?? false;
   const extractedAt = new Date().toISOString();
 
   const matching = await extractPdf(MATCHING_PDF, "Matching handbook");
@@ -40,6 +82,19 @@ export async function runExtractToptalGuides(): Promise<void> {
   );
   console.log(`Wrote ${MATCHING_RAW}`);
 
+  writeStructuredGuide({
+    outputPath: MATCHING_STRUCTURED,
+    sourceId: "toptal-matching-process-pdf",
+    title: "Job Application Matching Process Handbook for Developers",
+    pdfFilename: "Job Application Matching Process Handbook for Developers.pdf",
+    extractedAt,
+    numpages: matching.numpages,
+    text: matching.text,
+    purpose:
+      "This is the **primary authority** for Toptal pitch generation and application workflow in refine-cv.",
+    force,
+  });
+
   const profile = await extractPdf(PROFILE_PDF, "Profile creation guide");
   writeFileSync(
     PROFILE_RAW,
@@ -47,10 +102,16 @@ export async function runExtractToptalGuides(): Promise<void> {
   );
   console.log(`Wrote ${PROFILE_RAW}`);
 
-  console.log(
-    "Structured rules: sources/toptal-guides/job-application-matching-handbook.md",
-  );
-  console.log(
-    "Structured rules: sources/toptal-guides/developer-profile-creation-guide.md",
-  );
+  writeStructuredGuide({
+    outputPath: PROFILE_STRUCTURED,
+    sourceId: "toptal-profile-creation-guide-pdf",
+    title: "Developer — Profile Creation Guide",
+    pdfFilename: "Developer - Profile Creation Guide.pdf",
+    extractedAt,
+    numpages: profile.numpages,
+    text: profile.text,
+    purpose:
+      "This is the **primary authority** for baseline Toptal profile enhancement in refine-cv.",
+    force,
+  });
 }

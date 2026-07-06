@@ -1,42 +1,58 @@
 # Onboarding
 
-## Step 1 — Master CV
+Mechanical setup is handled by **`pnpm setup`**. Agent-driven steps use **`/onboard`** in Cursor chat.
 
-1. Add `profile/base-cv.pdf`
-2. Extract:
-
-```bash
-pnpm extract-cv
-```
-
-## Step 2 — Discover GitHub repos
+## Step 1 — Run setup
 
 ```bash
-pnpm list-repos
+pnpm install
+pnpm setup
 ```
 
-Opens `profile/github-repo-candidates.md`. Copy chosen `owner/repo` values into [config/github-repos.json](../config/github-repos.json).
+The wizard handles:
 
-## Step 3 — Index selected repos
+- Feature pack selection and `.cursor/` sync (seeds `profile/questionnaire.md` from the template)
+- Chrome install for PDF rendering (if tailor-cv pack selected)
+- CV intake — PDF path **or pasted text** → `profile/base-cv.md`
+- GitHub auth (can run `gh auth login` for you), repo picker, and index (if github-evidence pack selected)
 
-Ensure `GITHUB_TOKEN` or `gh auth login`, then:
+Re-run anytime; completed steps are skipped. `Ctrl+C` cancels cleanly.
+
+## Step 2 — Agent onboarding
+
+In Cursor chat:
+
+```
+/onboard
+```
+
+The agent will:
+
+- Fill questionnaire gaps in `profile/questionnaire.md`
+- Write `profile/base-cv-enhanced.md` and `profile/gap-report.md`
+
+Review `gap-report.md` before tailoring CVs.
+
+## Step 3 — Validate
 
 ```bash
-pnpm index-github
+pnpm validate
 ```
 
-## Step 4 — Questionnaire
+## Step 4 — Weekly refresh (github-evidence pack)
 
-Complete [questionnaire.md](questionnaire.md) with the agent (metrics, red lines, per-employer scope).
-
-## Step 5 — Enhanced base CV
-
-Agent produces `base-cv-enhanced.md` and `gap-report.md`. Review before `/tailor-cv`.
-
-## Step 6 — Weekly refresh
+After the first successful index:
 
 ```
 /loop 7d /refresh-github-profile
 ```
 
 See [docs/WEEKLY-REFRESH.md](../docs/WEEKLY-REFRESH.md).
+
+## Re-running setup
+
+```bash
+pnpm setup              # full wizard
+pnpm setup --yes        # re-sync packs with current selections
+pnpm setup --add toptal # add a pack
+```

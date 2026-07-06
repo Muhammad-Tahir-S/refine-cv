@@ -1,0 +1,7 @@
+{
+  "_comment": "Copy to refine-cv.json via pnpm setup — records installed feature packs",
+  "version": 1,
+  "installedPacks": ["core"],
+  "cvIntakeCompleted": false,
+  "githubConnectCompleted": false
+}

@@ -6,6 +6,7 @@
   "description": "CV tailoring workflow with GitHub evidence indexing",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "setup": "pnpm build && node dist/bin/setup.js",
     "extract-cv": "pnpm build && node dist/bin/extract-cv.js",
     "index-github": "pnpm build && node dist/bin/index-github.js",
     "list-repos": "pnpm build && node dist/bin/list-repos.js",
@@ -13,7 +14,6 @@
     "render-cv": "pnpm build && node dist/bin/render-cv.js",
     "extract-toptal-guides": "pnpm build && node dist/bin/extract-toptal-guides.js",
     "setup:pdf": "pnpm exec puppeteer browsers install chrome",
-    "postinstall": "pnpm exec puppeteer browsers install chrome",
     "auth:github": "gh auth login",
     "typecheck": "tsc --noEmit"
   },
@@ -21,6 +21,7 @@
     "node": ">=18"
   },
   "dependencies": {
+    "@inquirer/prompts": "^7.5.1",
     "@octokit/graphql": "^9.0.3",
     "@octokit/rest": "^22.0.1",
     "commander": "^14.0.3",

@@ -6,12 +6,16 @@ export const ROOT = join(SRC_DIR, "..", "..");
 
 export const paths = {
   root: ROOT,
+  packsManifest: join(ROOT, "packs.json"),
+  refineCvConfig: join(ROOT, "config", "refine-cv.json"),
   config: join(ROOT, "config", "github-repos.json"),
+  configExample: join(ROOT, "config", "github-repos.example.json"),
   profile: join(ROOT, "profile"),
   baseCvPdf: join(ROOT, "profile", "base-cv.pdf"),
   baseCvMd: join(ROOT, "profile", "base-cv.md"),
   baseCvEnhanced: join(ROOT, "profile", "base-cv-enhanced.md"),
   questionnaire: join(ROOT, "profile", "questionnaire.md"),
+  questionnaireExample: join(ROOT, "profile", "questionnaire.example.md"),
   githubIndex: join(ROOT, "profile", "github-index.json"),
   githubSummary: join(ROOT, "profile", "github-summary.md"),
   indexState: join(ROOT, "profile", "index-state.json"),
@@ -52,4 +56,8 @@ export const paths = {
     "SKILL.md",
   ),
   cvTemplateCss: join(ROOT, "templates", "cv", "resume.css"),
-} as const;
+};
+
+export function cursorSkill(name: string): string {
+  return join(ROOT, ".cursor", "skills", name, "SKILL.md");
+}

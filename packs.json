@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "packs": {
+    "core": {
+      "label": "Core",
+      "description": "Onboarding, CV extraction, questionnaire, and CV writing rules",
+      "default": true,
+      "required": true,
+      "dependsOn": [],
+      "cursor": {
+        "skills": ["onboard-profile"],
+        "commands": ["onboard"],
+        "rules": ["cv-writing"]
+      },
+      "sources": [
+        "sources/cv-best-practices.md",
+        "sources/references.json"
+      ],
+      "scripts": ["extract-cv", "validate"]
+    },
+    "github-evidence": {
+      "label": "GitHub evidence",
+      "description": "Index GitHub repos for CV bullet evidence and weekly refresh",
+      "default": false,
+      "recommended": true,
+      "dependsOn": ["core"],
+      "cursor": {
+        "skills": ["refresh-github-profile"],
+        "commands": ["refresh-github-profile"]
+      },
+      "scripts": ["list-repos", "index-github"]
+    },
+    "tailor-cv": {
+      "label": "Tailor CV",
+      "description": "Job-specific CV tailoring, match reports, and PDF export",
+      "default": false,
+      "recommended": true,
+      "dependsOn": ["core"],
+      "cursor": {
+        "skills": ["tailor-cv"],
+        "commands": ["tailor-cv"]
+      },
+      "sources": ["templates/cv/resume.css"],
+      "scripts": ["render-cv", "setup:pdf"]
+    },
+    "toptal": {
+      "label": "Toptal",
+      "description": "Toptal profile enhancement and job application pitches (BYO PDF guides)",
+      "default": false,
+      "recommended": false,
+      "dependsOn": ["core"],
+      "cursor": {
+        "skills": ["generate-toptal-pitch", "enhance-toptal-profile"],
+        "commands": ["toptal-pitch", "enhance-toptal-profile"],
+        "rules": ["toptal-writing"]
+      },
+      "sources": [
+        "sources/toptal-best-practices.md",
+        "sources/toptal-references.json",
+        "sources/toptal-guides/README.md"
+      ],
+      "scripts": ["extract-toptal-guides"]
+    }
+  }
+}

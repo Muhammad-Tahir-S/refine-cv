@@ -1,0 +1,26 @@
+# User-supplied Toptal guide PDFs
+
+The **Toptal pack** ships extraction tooling only — each user provides their own copies of the official Toptal PDF guides.
+
+## Required PDFs
+
+Drop these files in this folder (`sources/toptal-guides/pdf/`):
+
+| File | Extract output |
+|------|----------------|
+| `Job Application Matching Process Handbook for Developers.pdf` | `../job-application-matching-handbook.md` |
+| `Developer - Profile Creation Guide.pdf` | `../developer-profile-creation-guide.md` |
+
+Obtain the PDFs from your Toptal account or recruiter. Do not commit them to a public repository.
+
+## Extract
+
+After adding PDFs:
+
+```bash
+pnpm extract-toptal-guides
+```
+
+Then run `pnpm validate` to confirm extracts exist.
+
+If PDFs are missing, Toptal skills fall back to `sources/toptal-best-practices.md` (degraded mode).

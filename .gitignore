@@ -16,16 +16,27 @@ Thumbs.db
 .env
 .env.*
 *.pem
-*_token*
-*.pat
 
-# Optional local overrides (untracked personal notes)
-profile/local-notes.md
-profile/toptal-profile-current.md
-sources/toptal-guides/_matching-handbook-raw.txt
-sources/toptal-guides/_profile-guide-raw.txt
-sources/toptal-guides/pdf/pages/
+# User PII — allowlist: everything in profile/ stays local except docs/templates
+profile/*
+!profile/ONBOARDING.md
+!profile/questionnaire.example.md
 
-# Job folders may contain employer-specific drafts — track by default;
-# uncomment to ignore all application artifacts:
-# jobs/**
+# User config — allowlist: only *.example.json files are committed
+config/*
+!config/*.example.json
+
+# Application artifacts (employer-specific drafts)
+jobs/**
+
+# Toptal raw extracts and user-supplied PDFs (BYO — not redistributed)
+sources/toptal-guides/_*.txt
+sources/toptal-guides/job-application-matching-handbook.md
+sources/toptal-guides/developer-profile-creation-guide.md
+sources/toptal-guides/pdf/*
+!sources/toptal-guides/pdf/.gitkeep
+
+# Synced Cursor assets (canonical copies live in packs/)
+.cursor/skills/
+.cursor/commands/
+.cursor/rules/
