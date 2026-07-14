@@ -7,6 +7,8 @@ export const ROOT = join(SRC_DIR, "..", "..");
 export const paths = {
   root: ROOT,
   config: join(ROOT, "config", "github-repos.json"),
+  companiesConfig: join(ROOT, "config", "companies.json"),
+  jobsDir: join(ROOT, "jobs"),
   profile: join(ROOT, "profile"),
   baseCvPdf: join(ROOT, "profile", "base-cv.pdf"),
   baseCvMd: join(ROOT, "profile", "base-cv.md"),
@@ -51,5 +53,6 @@ export const paths = {
     "generate-toptal-pitch",
     "SKILL.md",
   ),
+  scanJobsSkill: join(ROOT, ".cursor", "skills", "scan-jobs", "SKILL.md"),
   cvTemplateCss: join(ROOT, "templates", "cv", "resume.css"),
 } as const;
