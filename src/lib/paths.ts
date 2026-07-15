@@ -24,6 +24,7 @@ export const paths = {
   toptalProfileEnhanced: join(ROOT, "profile", "toptal-profile-enhanced.md"),
   toptalProfileGapReport: join(ROOT, "profile", "toptal-profile-gap-report.md"),
   cvBestPractices: join(ROOT, "sources", "cv-best-practices.md"),
+  writingStyle: join(ROOT, "sources", "writing-style.md"),
   toptalBestPractices: join(ROOT, "sources", "toptal-best-practices.md"),
   toptalReferences: join(ROOT, "sources", "toptal-references.json"),
   toptalMatchingHandbook: join(
@@ -39,6 +40,7 @@ export const paths = {
     "developer-profile-creation-guide.md",
   ),
   tailorSkill: join(ROOT, ".cursor", "skills", "tailor-cv", "SKILL.md"),
+  avoidAiWritingSkill: join(ROOT, ".cursor", "skills", "avoid-ai-writing", "SKILL.md"),
   enhanceToptalProfileSkill: join(
     ROOT,
     ".cursor",

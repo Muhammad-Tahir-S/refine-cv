@@ -15,13 +15,14 @@ Per-job application pitch — not full CV tailoring.
 
 **Load in order (required):**
 
-1. [sources/toptal-guides/job-application-matching-handbook.md](../../../sources/toptal-guides/job-application-matching-handbook.md) — **§10–12 are the pitch basis**; also §9 Application Questions
-2. [sources/toptal-best-practices.md](../../../sources/toptal-best-practices.md) — **§3 encodes the pitch doctrine as citable rules; §7 is the paste checklist** (this skill points here rather than restating the rules)
-3. [sources/toptal-references.json](../../../sources/toptal-references.json) for citations
+1. [sources/writing-style.md](../../../sources/writing-style.md) — anti-AI prose; polish pass before saving
+2. [sources/toptal-guides/job-application-matching-handbook.md](../../../sources/toptal-guides/job-application-matching-handbook.md) — **§10–12 are the pitch basis**; also §9 Application Questions
+3. [sources/toptal-best-practices.md](../../../sources/toptal-best-practices.md) — **§3 encodes the pitch doctrine as citable rules; §7 is the paste checklist** (this skill points here rather than restating the rules)
+4. [sources/toptal-references.json](../../../sources/toptal-references.json) for citations
 
 - Base CV: `profile/base-cv-enhanced.md` (fallback: `profile/base-cv.md`)
 - `profile/github-summary.md`, `profile/questionnaire.md`, `profile/gap-report.md` (if present)
-- Rule: [.cursor/rules/toptal-writing.mdc](../../rules/toptal-writing.mdc)
+- Rules: [.cursor/rules/toptal-writing.mdc](../../rules/toptal-writing.mdc), [.cursor/rules/writing-style.mdc](../../rules/writing-style.mdc)
 
 If `base-cv-enhanced.md` is still a placeholder, complete onboarding first.
 
@@ -73,9 +74,11 @@ All **paste-ready content** in `pitch.md` — main pitch, short pitch, applicati
 - **No square brackets** in paste blocks (except inside URLs if unavoidable)
 - **No backticks** around terms in paste blocks
 - File **headings and labels** (e.g. `## Application answers`) may stay markdown for repo navigation; only the copy-paste blocks themselves must be plain text
-- Prefer em dashes or commas over bullet lists inside the main pitch paragraph; use simple `- url — description` lines only in the project-links section if needed
+- Prefer commas and periods over bullet lists inside the main pitch paragraph; use simple `- url - description` lines only in the project-links section if needed
 
 **Completion criterion:** every item on the §7 paste checklist is either satisfied in the paragraph or logged as a gap in `pitch-match-report.md` — none silently skipped.
+
+Run the [writing-style.md](../../../sources/writing-style.md) §4 polish pass on `pitch.md` before continuing. Optionally run `/avoid-ai-writing` in detect mode before handoff.
 
 ### 7. Write `pitch-match-report.md`
 
@@ -84,7 +87,8 @@ All **paste-ready content** in `pitch.md` — main pitch, short pitch, applicati
 3. **Risks** — overclaiming, weak overlap, voice/§12 weak-pattern risks
 4. **Gaps** — unsupported skills/domains (honest list)
 5. **Optional application answers** — third person, plain text (same copy-paste rules as §6); use `added in the pitch.` when redundant (handbook §9); include overlap hours, interview availability, and start date if the JD asks
-6. **Toptal pitch checklist** — from [toptal-best-practices.md](../../../sources/toptal-best-practices.md) §7; mark pass/fail
+6. **Style pass** — from [sources/writing-style.md](../../../sources/writing-style.md) §5; mark pass/fail
+7. **Toptal pitch checklist** — from [toptal-best-practices.md](../../../sources/toptal-best-practices.md) §7; mark pass/fail
 
 Reuse the table shape from existing job `match-report.md` / `pitch-match-report.md` files where helpful.
 

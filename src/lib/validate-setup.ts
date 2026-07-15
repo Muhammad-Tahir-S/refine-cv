@@ -17,8 +17,14 @@ export function runValidateSetup(): number {
   if (existsSync(paths.cvBestPractices)) check("ok", "sources/cv-best-practices.md", counts);
   else check("fail", "missing sources/cv-best-practices.md", counts);
 
+  if (existsSync(paths.writingStyle)) check("ok", "sources/writing-style.md", counts);
+  else check("fail", "missing sources/writing-style.md", counts);
+
   if (existsSync(paths.tailorSkill)) check("ok", "tailor-cv skill", counts);
   else check("fail", "missing tailor-cv skill", counts);
+
+  if (existsSync(paths.avoidAiWritingSkill)) check("ok", "avoid-ai-writing skill", counts);
+  else check("warn", "missing avoid-ai-writing skill", counts);
 
   if (existsSync(paths.toptalBestPractices)) check("ok", "sources/toptal-best-practices.md", counts);
   else check("warn", "missing sources/toptal-best-practices.md", counts);

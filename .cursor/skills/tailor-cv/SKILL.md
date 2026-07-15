@@ -2,18 +2,20 @@
 name: tailor-cv
 description: >-
   Tailor CV to a job description using citable ATS/human best practices,
-  profile evidence, and GitHub summary. Use when the user pastes a JD,
-  mentions tailoring a CV, ATS optimization, or runs /tailor-cv in refine-cv.
+  profile evidence, GitHub summary, and anti-AI writing style rules. Use when
+  the user pastes a JD, mentions tailoring a CV, ATS optimization, cover letters,
+  or runs /tailor-cv in refine-cv.
 ---
 
 # Tailor CV
 
 ## Prerequisites
 
+- [sources/writing-style.md](../../../sources/writing-style.md) loaded and followed (polish pass before saving prose)
 - [sources/cv-best-practices.md](../../../sources/cv-best-practices.md) loaded and followed
 - Base CV: `profile/base-cv-enhanced.md` (fallback: `profile/base-cv.md`)
 - `profile/github-summary.md`, `profile/questionnaire.md`
-- Rule: [.cursor/rules/cv-writing.mdc](../../rules/cv-writing.mdc)
+- Rules: [.cursor/rules/cv-writing.mdc](../../rules/cv-writing.mdc), [.cursor/rules/writing-style.mdc](../../rules/writing-style.mdc)
 
 If `base-cv-enhanced.md` is still a placeholder, complete onboarding first (see `profile/ONBOARDING.md`).
 
@@ -34,6 +36,7 @@ Create:
 - `tailored-cv.pdf` — rendered PDF (pending)
 - `match-report.md` — output (pending)
 - `cover-letter-hooks.md` — optional 3–5 bullets
+- `cover-letter.md` — optional when user requests a cover letter
 
 ### 3. Build keyword map from JD
 
@@ -66,6 +69,8 @@ Use both acronym and long form where the JD implies both (see best practices).
 
 **Completion criterion:** every required keyword from the step-3 map is either placed naturally in the CV or logged as a gap in `match-report.md` — none silently dropped.
 
+Run the [writing-style.md](../../../sources/writing-style.md) §4 polish pass on `tailored-cv.md` before continuing. For cover letters, optionally run `/avoid-ai-writing` in detect mode before handoff.
+
 ### 6. Write `match-report.md`
 
 Include:
@@ -74,13 +79,23 @@ Include:
 2. **Risks** — stuffing, format issues, unsupported claims
 3. **Questions for user** — only if blocking accuracy
 4. **Human + ATS checklist** — copy from [sources/cv-best-practices.md](../../../sources/cv-best-practices.md) checklist section; mark pass/fail
-5. **PDF export checklist** — selectable text, contact info in body, no tables/columns/graphics, employer format preference (PDF vs DOCX)
+5. **Style pass** — from [sources/writing-style.md](../../../sources/writing-style.md) §5; mark pass/fail
+6. **PDF export checklist** — selectable text, contact info in body, no tables/columns/graphics, employer format preference (PDF vs DOCX)
 
 ### 7. Optional `cover-letter-hooks.md`
 
-3–5 factual hooks linking your evidence to the role (no invented stories).
+3–5 factual hooks linking your evidence to the role (no invented stories). Run the writing-style polish pass; zero em dashes.
 
-### 8. Render `tailored-cv.pdf`
+### 8. Optional `cover-letter.md`
+
+When the user asks for a cover letter:
+
+- First person; direct tone per `profile/questionnaire.md` § Writing voice
+- Follow [sources/writing-style.md](../../../sources/writing-style.md) (zero em dashes, no contrast clichés)
+- Ground every claim in CV/GitHub evidence; no invented stories
+- Run polish pass before saving; include **Style pass** in `match-report.md`
+
+### 9. Render `tailored-cv.pdf`
 
 Run:
 

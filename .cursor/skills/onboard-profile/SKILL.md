@@ -15,7 +15,7 @@ Run the setup sequence in [profile/ONBOARDING.md](../../../profile/ONBOARDING.md
 1. **CV** — Confirm `profile/base-cv.pdf` exists; if not, ask for a path/upload before `pnpm extract-cv`. A manual paste into `profile/base-cv.md` is an accepted fallback.
 2. **GitHub** — If `config/github-repos.json` repos is empty, run `pnpm list-repos` and have the user pick from `profile/github-repo-candidates.md`; write selections (include `githubUsername`). Verify the token, then run `pnpm index-github`. If repos stay empty, stop and request a repo list.
 3. **Questionnaire** — Read `profile/base-cv.md` and `profile/github-summary.md` first, then ask **only** the gaps listed below. Do not ask for anything already in the CV or GitHub index. Write answers to `profile/questionnaire.md`.
-4. **Enhanced CV + gap report** — Read [sources/cv-best-practices.md](../../../sources/cv-best-practices.md). Write `profile/base-cv-enhanced.md` (stronger bullets, ATS structure, **same facts**) and `profile/gap-report.md` (table of unsupported/missing items). Tag GitHub-derived bullets per `github-summary.md`.
+4. **Enhanced CV + gap report** — Read [sources/cv-best-practices.md](../../../sources/cv-best-practices.md) and [sources/writing-style.md](../../../sources/writing-style.md). Write `profile/base-cv-enhanced.md` (stronger bullets, ATS structure, **same facts**) and `profile/gap-report.md` (table of unsupported/missing items). Tag GitHub-derived bullets per `github-summary.md`. Run the writing-style polish pass before saving.
 5. **Handoff** — Tell the user to review `gap-report.md` before `/tailor-cv`, then arm the weekly refresh per [docs/WEEKLY-REFRESH.md](../../../docs/WEEKLY-REFRESH.md).
 
 ## Gaps to ask (only if not inferable from CV or GitHub)

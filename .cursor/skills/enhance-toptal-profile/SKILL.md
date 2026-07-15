@@ -15,14 +15,15 @@ Baseline profile optimization only — not per-job tailoring.
 
 **Load in order (required):**
 
-1. [sources/toptal-guides/developer-profile-creation-guide.md](../../../sources/toptal-guides/developer-profile-creation-guide.md) — primary authority for profile sections
-2. [sources/toptal-guides/job-application-matching-handbook.md](../../../sources/toptal-guides/job-application-matching-handbook.md) — §8 profile requirements
-3. [sources/toptal-best-practices.md](../../../sources/toptal-best-practices.md) — **§2 profile rules, §8 paste checklist** (this skill points here rather than restating the rules)
-4. [sources/toptal-references.json](../../../sources/toptal-references.json) for citations
+1. [sources/writing-style.md](../../../sources/writing-style.md) — anti-AI prose; polish pass before saving
+2. [sources/toptal-guides/developer-profile-creation-guide.md](../../../sources/toptal-guides/developer-profile-creation-guide.md) — primary authority for profile sections
+3. [sources/toptal-guides/job-application-matching-handbook.md](../../../sources/toptal-guides/job-application-matching-handbook.md) — §8 profile requirements
+4. [sources/toptal-best-practices.md](../../../sources/toptal-best-practices.md) — **§2 profile rules, §8 paste checklist** (this skill points here rather than restating the rules)
+5. [sources/toptal-references.json](../../../sources/toptal-references.json) for citations
 
 - Base CV: `profile/base-cv-enhanced.md` (fallback: `profile/base-cv.md`)
 - `profile/github-summary.md`, `profile/questionnaire.md`, `profile/gap-report.md` (if present)
-- Rule: [.cursor/rules/toptal-writing.mdc](../../rules/toptal-writing.mdc)
+- Rules: [.cursor/rules/toptal-writing.mdc](../../rules/toptal-writing.mdc), [.cursor/rules/writing-style.mdc](../../rules/writing-style.mdc)
 
 If `base-cv-enhanced.md` is still a placeholder, complete onboarding first.
 
@@ -58,6 +59,8 @@ Prioritize the verified stack from CV and GitHub; prefer projects with indexed e
 
 **Completion criterion:** every §8 checklist row is satisfied in the output or listed as a gap in the gap report — no section left blank without a gap note.
 
+Run the [writing-style.md](../../../sources/writing-style.md) §4 polish pass on all paste blocks in `toptal-profile-enhanced.md` before continuing.
+
 ### 4. Write `profile/toptal-profile-gap-report.md`
 
 1. Weak or missing portfolio items — what to add or replace
@@ -65,6 +68,7 @@ Prioritize the verified stack from CV and GitHub; prefer projects with indexed e
 3. Skills under-leveled or missing that should appear on the profile
 4. Metrics needing user confirmation — from `needs-your-confirmation` tags
 5. Blocking questions only
+6. **Style pass** — from [sources/writing-style.md](../../../sources/writing-style.md) §5; mark pass/fail
 
 ### 5. Handoff
 

@@ -8,9 +8,10 @@ alwaysApply: false
 
 When editing or generating CVs, cover letters, match reports, or job-specific outputs in this repository:
 
-1. **Load the authority first:** [sources/cv-best-practices.md](../../sources/cv-best-practices.md) is the **single source for CV rules**; follow it and cite source IDs from [sources/references.json](../../sources/references.json). Primary authorities are university career centers — not SEO blogs or social posts.
-2. **Load profile evidence:** `profile/base-cv-enhanced.md` (fallback `profile/base-cv.md`), `profile/github-summary.md`, `profile/questionnaire.md`.
-3. **Guardrails (enforced at edit time):** never invent employers, titles, dates, technologies, or metrics — unsupported items go to `profile/gap-report.md` or the job’s `match-report.md`; respect red lines in `profile/questionnaire.md` and `config/github-repos.json` (only indexed, permitted repos).
-4. **Job outputs** live under `jobs/YYYY-MM-DD-company-role/`.
+1. **Load writing style first:** [sources/writing-style.md](../../sources/writing-style.md) — anti-AI prose rules; run the polish pass before saving.
+2. **Load the authority:** [sources/cv-best-practices.md](../../sources/cv-best-practices.md) is the **single source for CV rules**; follow it and cite source IDs from [sources/references.json](../../sources/references.json). Primary authorities are university career centers — not SEO blogs or social posts.
+3. **Load profile evidence:** `profile/base-cv-enhanced.md` (fallback `profile/base-cv.md`), `profile/github-summary.md`, `profile/questionnaire.md`.
+4. **Guardrails (enforced at edit time):** never invent employers, titles, dates, technologies, or metrics — unsupported items go to `profile/gap-report.md` or the job’s `match-report.md`; respect red lines in `profile/questionnaire.md` and `config/github-repos.json` (only indexed, permitted repos).
+5. **Job outputs** live under `jobs/YYYY-MM-DD-company-role/`.
 
 For the full workflow use the **tailor-cv** skill (`.cursor/skills/tailor-cv/SKILL.md`) or `/tailor-cv`; for first-time setup use **onboard-profile**.

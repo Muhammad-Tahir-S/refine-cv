@@ -63,3 +63,14 @@ Updated **2026-07-03** (Full-Stack Engineer baseline).
 
 - **CV length:** 2 pages baseline; tighten per job via `/tailor-cv`
 - **Feature:** Feedback-Forum, portfolio, Ascent; de-emphasize Edabit/Wikipedia for senior roles
+
+## Writing voice
+
+Personal prose overrides for [sources/writing-style.md](../sources/writing-style.md). Agents must honor these when generating cover letters, pitches, and profile copy.
+
+- **Register:** Direct and professional. No brochure or marketing tone.
+- **Punctuation:** No em dashes. Commas and periods only; split long clauses into separate sentences.
+- **Contrast framing:** Avoid `not just`, `not only`, and `X, not Y` rhetorical contrasts. State positive claims plainly.
+- **Words to avoid:** passionate, thrilled, excited to apply, leverage, delve, robust, seamless, game-changer, cutting-edge
+- **Cover letters:** First person OK. Lead with role fit and one verified proof point. No generic enthusiasm closers.
+- **Sentence rhythm:** Mix short and long sentences. Do not write five similar-length sentences in a row.

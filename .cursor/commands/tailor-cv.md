@@ -4,7 +4,7 @@ Tailor your CV to a job description using this repo’s best practices and profi
 
 ## Instructions for the agent
 
-Apply the **tailor-cv** skill (`.cursor/skills/tailor-cv/SKILL.md`) with rule `.cursor/rules/cv-writing.mdc`. The skill owns the full workflow: source loading, job-folder creation, keyword mapping, `tailored-cv.md` + `match-report.md` (+ optional `cover-letter-hooks.md`) outputs, the `pnpm render-cv` PDF step, and handoff.
+Apply the **tailor-cv** skill (`.cursor/skills/tailor-cv/SKILL.md`) with rules `.cursor/rules/cv-writing.mdc` and `.cursor/rules/writing-style.mdc`. The skill owns the full workflow: source loading, job-folder creation, keyword mapping, `tailored-cv.md` + `match-report.md` (+ optional `cover-letter-hooks.md` or `cover-letter.md`) outputs, the writing-style polish pass, the `pnpm render-cv` PDF step, and handoff.
 
 ## User prompt template
 
