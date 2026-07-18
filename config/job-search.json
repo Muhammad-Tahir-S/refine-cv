@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "applicant": {
+    "location": "Lagos, Nigeria",
+    "citizenship": "Nigeria",
+    "workPermitCountries": ["Nigeria"]
+  },
+  "geoEligibility": {
+    "summary": "Nigerian citizen with Nigeria work permit only — no EU/UK/US right to work",
+    "acceptGlobalRemote": true,
+    "acceptEmeaOnlyWhenAfricaMentioned": true,
+    "defaultEmeaToVerify": true
+  },
+  "roleFilters": {
+    "reactFrontend": true,
+    "levels": ["junior", "mid", "senior", "staff_lead", "unknown"]
+  }
+}

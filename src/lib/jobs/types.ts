@@ -2,6 +2,8 @@ export type AtsType = "greenhouse" | "lever" | "ashby" | "workable" | "custom";
 
 export type RemoteScope = "global" | "emea" | "regional" | "unknown";
 
+export type GeoEligibility = "nigeria_eligible" | "verify_geo" | "likely_excluded";
+
 export type LevelHint = "junior" | "mid" | "senior" | "staff_lead" | "unknown";
 
 export interface CompanyEntry {
@@ -24,6 +26,7 @@ export interface JobPosting {
   url: string;
   location: string;
   remoteScope: RemoteScope;
+  geoEligibility?: GeoEligibility;
   level: LevelHint;
   description: string;
   source: AtsType;

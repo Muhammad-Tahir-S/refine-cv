@@ -6,7 +6,8 @@ Updated **2026-07-03** (Full-Stack Engineer baseline).
 
 - **Legal name (as on CV):** Muhammad-Tahir Sanuth
 - **Location / timezone:** Lagos, Nigeria (Remote)
-- **Work authorization:** Not relevant / not listed on applications
+- **Work authorization:** Nigerian citizen; work permit in Nigeria only (no EU/UK/US right to work)
+- **Job search geo criteria:** See `config/job-search.json` — scanner treats global remote as Nigeria-eligible; EMEA/unclear remote requires manual verification unless Nigeria/Africa is explicitly mentioned
 - **Official title at Codygo:** **Full-Stack Engineer**
 - **Target role family:** Full-Stack Engineer / Senior Full-Stack Engineer; Frontend Engineer when JD is front-end IC–focused
 - **Industries to emphasize:** B2B SaaS, marketing/analytics, cloud/infra UIs, AI-enabled web apps, workflow builders

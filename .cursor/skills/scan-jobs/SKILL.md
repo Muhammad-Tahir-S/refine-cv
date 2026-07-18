@@ -11,9 +11,10 @@ description: >-
 ## Prerequisites
 
 - Company registry: `config/companies.json`
+- Geo / role criteria: `config/job-search.json`
 - Scan state (auto-created): `~/.config/refine-cv/scan-state.json`
 - Applied jobs (auto-synced from report checkboxes): `~/.config/refine-cv/applied-jobs.json`
-- Criteria match the Jul 7 scan: global/EMEA remote, junior–senior React FE, live on company ATS
+- Criteria: React/frontend remote roles for a Nigerian applicant (`config/job-search.json`); Nigeria-eligible vs verify-geo vs likely-excluded geo tiers
 
 ## Workflow
 
@@ -26,7 +27,7 @@ pnpm scan-jobs
 This:
 
 1. Fetches all boards in `config/companies.json` via public ATS JSON APIs (custom careers HTML for non-ATS employers)
-2. Filters for React/frontend + acceptable remote scope
+2. Filters for React/frontend + Nigeria-focused geo eligibility (`src/lib/jobs/geo.ts`)
 3. Merges applied checkboxes from prior `jobs/*-job-scan/report.md` files
 4. Dedupes against scan state; reports **new** listings only
 5. Writes `jobs/YYYY-MM-DD-job-scan/report.md` and `raw.json`
@@ -36,7 +37,7 @@ This:
 Present:
 
 - Count of new vs previously seen vs excluded
-- Global-remote and EMEA tables from the report
+- Nigeria-eligible and verify-geo tables from the report (prioritize Nigeria-eligible)
 - Fetch errors (if any) with company names
 - Path to the report and applied checklist
 
@@ -75,7 +76,7 @@ Suggest `/loop 7d /scan-jobs` (mirrors `docs/WEEKLY-REFRESH.md` for GitHub).
 - Do not paste LinkedIn cookies or tokens in chat
 - Do not increase LinkedIn discovery volume beyond the script caps
 - Do not add blocklisted employers from `config/companies.json` blocklist
-- Re-verify geo restrictions before recommending EMEA roles for Nigeria-based applicants
+- Treat verify-geo listings as manual review only — many EMEA roles exclude Nigeria despite regional labels
 
 ## Handoff
 

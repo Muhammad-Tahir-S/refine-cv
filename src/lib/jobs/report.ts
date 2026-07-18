@@ -1,4 +1,5 @@
-import type { JobPosting, ScanRunResult } from "./types.js";
+import type { GeoEligibility, JobPosting, ScanRunResult } from "./types.js";
+import { geoEligibilityLabel, loadJobSearchConfig } from "./geo.js";
 
 function escapeCell(value: string): string {
   return value.replace(/\|/g, "\\|").replace(/\n/g, " ");
@@ -32,17 +33,24 @@ function formatRemoteScope(scope: JobPosting["remoteScope"]): string {
   }
 }
 
+function formatGeoEligibility(eligibility: GeoEligibility | undefined): string {
+  if (!eligibility) {
+    return "Unknown";
+  }
+  return geoEligibilityLabel(eligibility);
+}
+
 function jobTableRows(jobs: JobPosting[]): string {
   if (jobs.length === 0) {
     return "_No listings in this section._\n";
   }
 
   const header =
-    "| Company | Role | Level | Remote | Apply |\n|--------|------|-------|--------|-------|\n";
+    "| Company | Role | Level | Remote | Geo | Apply |\n|--------|------|-------|--------|-----|-------|\n";
   const rows = jobs
     .map(
       (job) =>
-        `| **${escapeCell(job.company)}** | ${escapeCell(job.title)} | ${formatLevel(job.level)} | ${formatRemoteScope(job.remoteScope)} | ${job.url} |`,
+        `| **${escapeCell(job.company)}** | ${escapeCell(job.title)} | ${formatLevel(job.level)} | ${formatRemoteScope(job.remoteScope)} | ${formatGeoEligibility(job.geoEligibility)} | ${job.url} |`,
     )
     .join("\n");
   return `${header}${rows}\n`;
@@ -58,14 +66,21 @@ function appliedChecklist(jobs: JobPosting[]): string {
     .join("\n");
 }
 
+function countByGeo(jobs: JobPosting[], eligibility: GeoEligibility): number {
+  return jobs.filter((job) => job.geoEligibility === eligibility).length;
+}
+
 export function renderScanReport(result: ScanRunResult): string {
-  const globalJobs = result.newJobs.filter((job) => job.remoteScope === "global");
-  const emeaJobs = result.newJobs.filter(
-    (job) => job.remoteScope === "emea" || job.remoteScope === "unknown",
+  const config = loadJobSearchConfig();
+  const nigeriaEligibleJobs = result.newJobs.filter(
+    (job) => job.geoEligibility === "nigeria_eligible",
   );
+  const verifyGeoJobs = result.newJobs.filter((job) => job.geoEligibility === "verify_geo");
 
   const stats = [
     `| Total matched (after filters) | ${result.allMatched.length} |`,
+    `| — Nigeria-eligible | ${countByGeo(result.allMatched, "nigeria_eligible")} |`,
+    `| — Verify geo | ${countByGeo(result.allMatched, "verify_geo")} |`,
     `| New this run | **${result.newJobs.length}** |`,
     `| Previously seen (still open) | ${result.previouslySeen.length} |`,
     `| Excluded by filter | ${result.excluded.length} |`,
@@ -89,30 +104,34 @@ export function renderScanReport(result: ScanRunResult): string {
 
 **Scan date:** ${result.scanDate}  
 **Source:** ATS registry (\`config/companies.json\`) — Greenhouse, Lever, Ashby, Workable, custom careers pages  
+**Applicant geo:** ${config.applicant.citizenship} citizen, work permit in ${config.applicant.workPermitCountries.join(", ")} only (\`config/job-search.json\`)  
 **Criteria:**
-- Global remote **or** EMEA remote
-- Junior → senior level (staff/lead flagged, not dropped)
 - React / frontend focus
-- Role live on company careers / ATS
+- Junior → senior level (staff/lead flagged, not dropped)
+- **Nigeria-eligible:** global remote or explicit Nigeria/Africa/unrestricted hire signals
+- **Verify geo:** EMEA or unclear remote — manual check before applying
+- **Likely excluded:** EU/UK/US-only, hybrid/on-site, or Africa-excluded listings
 
 ---
 
 ## Method
 
 1. Fetch all registered company boards via public ATS JSON APIs (or custom careers HTML for non-ATS employers).
-2. Filter for React/frontend + acceptable remote scope.
+2. Filter for React/frontend + geo eligibility (\`src/lib/jobs/geo.ts\`).
 3. Dedupe against \`~/.config/refine-cv/scan-state.json\` and applied jobs from prior report checkboxes.
 4. LinkedIn discovery is a separate low-volume step (\`pnpm discover-linkedin\`).
 
 ---
 
-## New listings — global remote
+## New listings — Nigeria-eligible
 
-${jobTableRows(globalJobs)}
+${jobTableRows(nigeriaEligibleJobs)}
 
-## New listings — EMEA / verify geo
+## New listings — verify geo
 
-${jobTableRows(emeaJobs)}
+Roles with EMEA or unclear remote scope without explicit Nigeria/Africa hire language. Confirm eligibility on the listing before applying.
+
+${jobTableRows(verifyGeoJobs)}
 
 ---
 
@@ -131,6 +150,8 @@ ${fetchErrors}
 ---
 
 ## Excluded sample (first 15)
+
+Includes likely geo exclusions (EU/UK/US-only, hybrid, Africa excluded) and non-frontend roles.
 
 ${excludedSample}
 

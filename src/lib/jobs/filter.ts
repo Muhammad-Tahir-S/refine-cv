@@ -1,4 +1,9 @@
-import type { JobPosting, LevelHint, RemoteScope } from "./types.js";
+import {
+  classifyGeoEligibility,
+  geoExclusionReason,
+  isRestrictedRemoteScope,
+} from "./geo.js";
+import type { GeoEligibility, JobPosting, LevelHint, RemoteScope } from "./types.js";
 
 const TITLE_FRONTEND_PATTERNS = [
   /\bfrontend\b/i,
@@ -55,7 +60,8 @@ const GLOBAL_REMOTE_PATTERNS = [
   /\banywhere in the world\b/i,
   /\bremote anywhere\b/i,
   /\bhome based\b.*\bworldwide\b/i,
-  /\bhome based\b/i,
+  /\bglobally remote\b/i,
+  /\bopen to applicants located anywhere\b/i,
 ];
 
 const EMEA_PATTERNS = [
@@ -65,6 +71,7 @@ const EMEA_PATTERNS = [
   /\buk\b/i,
   /\bunited kingdom\b/i,
   /\bremote-first\b/i,
+  /\bhome based\b/i,
 ];
 
 const RESTRICTED_PATTERNS = [
@@ -77,8 +84,25 @@ const RESTRICTED_PATTERNS = [
   /\bpoland only\b/i,
 ];
 
-export function classifyRemoteScope(text: string): RemoteScope {
-  const haystack = text.toLowerCase();
+export function classifyRemoteScope(location: string, description: string): RemoteScope {
+  const loc = location.toLowerCase().trim();
+
+  if (loc) {
+    if (/\bhome based - worldwide\b/i.test(loc) || /\bworldwide\b/i.test(loc)) {
+      return "global";
+    }
+    if (/\bhome based - emea\b/i.test(loc) || (/\bemea\b/i.test(loc) && !/\bworldwide\b/i.test(loc))) {
+      return "emea";
+    }
+    if (GLOBAL_REMOTE_PATTERNS.some((pattern) => pattern.test(loc))) {
+      return "global";
+    }
+    if (RESTRICTED_PATTERNS.some((pattern) => pattern.test(loc))) {
+      return "regional";
+    }
+  }
+
+  const haystack = `${location}\n${description}`.toLowerCase();
   if (GLOBAL_REMOTE_PATTERNS.some((pattern) => pattern.test(haystack))) {
     return "global";
   }
@@ -144,16 +168,37 @@ function hasReactFocus(title: string, description: string): boolean {
   return softwareEngineerTitle && reactInDescription;
 }
 
-export function matchesScanCriteria(posting: JobPosting): { ok: boolean; reason?: string } {
+export function withGeoEligibility(posting: JobPosting): JobPosting {
+  return {
+    ...posting,
+    geoEligibility: classifyGeoEligibility(posting),
+  };
+}
+
+export function matchesScanCriteria(posting: JobPosting): {
+  ok: boolean;
+  reason?: string;
+  geoEligibility?: GeoEligibility;
+} {
   if (!hasReactFocus(posting.title, posting.description)) {
     return { ok: false, reason: "Not React/frontend focused" };
   }
 
-  if (posting.remoteScope === "regional") {
-    return { ok: false, reason: "Remote scope too restricted (US-only/hybrid/on-site)" };
+  const geoEligibility = classifyGeoEligibility(posting);
+
+  if (geoEligibility === "likely_excluded") {
+    return { ok: false, reason: geoExclusionReason(posting), geoEligibility };
   }
 
-  return { ok: true };
+  if (isRestrictedRemoteScope(posting.remoteScope) && geoEligibility !== "nigeria_eligible") {
+    return {
+      ok: false,
+      reason: "Remote scope too restricted (US-only/hybrid/on-site)",
+      geoEligibility,
+    };
+  }
+
+  return { ok: true, geoEligibility };
 }
 
 export function filterPostings(postings: JobPosting[]): {
@@ -166,9 +211,12 @@ export function filterPostings(postings: JobPosting[]): {
   for (const posting of postings) {
     const result = matchesScanCriteria(posting);
     if (result.ok) {
-      matched.push(posting);
+      matched.push(withGeoEligibility(posting));
     } else {
-      excluded.push({ posting, reason: result.reason ?? "Excluded" });
+      excluded.push({
+        posting: withGeoEligibility(posting),
+        reason: result.reason ?? "Excluded",
+      });
     }
   }
 
@@ -179,7 +227,7 @@ export function inferRemoteScopeFromFields(
   location: string,
   description: string,
 ): RemoteScope {
-  return classifyRemoteScope(`${location}\n${description}`);
+  return classifyRemoteScope(location, description);
 }
 
 export function inferLevelFromFields(title: string, description: string): LevelHint {
