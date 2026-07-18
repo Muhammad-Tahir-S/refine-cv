@@ -28,4 +28,4 @@ sources/toptal-guides/pdf/pages/
 
 # Job folders may contain employer-specific drafts — track by default;
 # uncomment to ignore all application artifacts:
-# jobs/**
+jobs/**

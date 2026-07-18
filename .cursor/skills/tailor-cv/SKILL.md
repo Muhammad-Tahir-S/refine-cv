@@ -88,12 +88,7 @@ Include:
 
 ### 8. Optional `cover-letter.md`
 
-When the user asks for a cover letter:
-
-- First person; direct tone per `profile/questionnaire.md` § Writing voice
-- Follow [sources/writing-style.md](../../../sources/writing-style.md) (zero em dashes, no contrast clichés)
-- Ground every claim in CV/GitHub evidence; no invented stories
-- Run polish pass before saving; include **Style pass** in `match-report.md`
+When the user asks for a cover letter, apply the **generate-cover-letter** skill (`.cursor/skills/generate-cover-letter/SKILL.md`) reusing this job's folder. That skill owns cover-letter structure, evidence mapping, the writing-style polish pass, and the mandatory avoid-ai-writing double-check.
 
 ### 9. Render `tailored-cv.pdf`
 

@@ -86,6 +86,48 @@
       "retrieved": "2026-06-29",
       "topics": ["profile-creation", "developer-guide", "portfolio", "skills"],
       "note": "Primary Toptal authority for profile enhancement. OCR extract in sources/toptal-guides/developer-profile-creation-guide.md."
+    },
+    {
+      "id": "mit-capd-cover-letter",
+      "title": "How to write an effective cover letter (with samples)",
+      "url": "https://capd.mit.edu/resources/how-to-write-an-effective-cover-letter/",
+      "publisher": "MIT Career Advising & Professional Development",
+      "retrieved": "2026-07-18",
+      "topics": ["cover-letter-structure", "length", "greeting", "body-examples"]
+    },
+    {
+      "id": "mit-eecs-commlab-cover-letter",
+      "title": "Cover letter for a job",
+      "url": "https://mitcommlab.mit.edu/eecs/commkit/cover-letter-for-a-job/",
+      "publisher": "MIT EECS Communication Lab",
+      "retrieved": "2026-07-18",
+      "topics": ["cover-letter-structure", "concrete-claims", "reader-expectations"]
+    },
+    {
+      "id": "berkeley-career-cover-letters",
+      "title": "Cover Letters — Career Engagement",
+      "url": "https://career.berkeley.edu/prepare-for-success/cover-letters/",
+      "publisher": "UC Berkeley Career Engagement",
+      "retrieved": "2026-07-18",
+      "topics": ["tailoring", "expand-not-repeat", "employer-focus", "formatting"]
+    },
+    {
+      "id": "resumegenius-cover-letter-stats",
+      "title": "50+ Cover Letter Statistics (Hiring Manager Survey)",
+      "url": "https://resumegenius.com/blog/cover-letter-help/cover-letter-statistics",
+      "publisher": "Resume Genius",
+      "retrieved": "2026-07-18",
+      "topics": ["length", "tailoring-importance", "context-only"],
+      "note": "Vendor survey; use for length/prevalence context only."
+    },
+    {
+      "id": "recruiter-ai-context-2026",
+      "title": "Recruiter attitudes to AI-generated cover letters (2026 survey roundup)",
+      "url": "https://coverlettercopilot.ai/blog/recruiters-human-vs-ai-cover-letters",
+      "publisher": "Various (survey roundup)",
+      "retrieved": "2026-07-18",
+      "topics": ["ai-screening", "authenticity", "personal-anchoring", "context-only"],
+      "note": "Context only; not a writing-style authority. Writing rules come from sources/writing-style.md."
     }
   ]
 }
