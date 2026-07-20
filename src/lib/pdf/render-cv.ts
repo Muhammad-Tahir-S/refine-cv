@@ -2,11 +2,21 @@ import { readFileSync, existsSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import puppeteer from "puppeteer";
 import { paths } from "../paths.js";
-import { parseCvMarkdown, renderCvHtml } from "./parse-cv-md.js";
+import {
+  assertNoInternalMetadataInHtml,
+  parseCvMarkdownWithDiagnostics,
+  renderCvHtml,
+  type CvRenderDiagnostic,
+} from "./parse-cv-md.js";
 
 export interface RenderCvOptions {
   inputPath: string;
   outputPath?: string;
+}
+
+export interface RenderCvResult {
+  outputPath: string;
+  diagnostics: CvRenderDiagnostic[];
 }
 
 function defaultOutputPath(inputPath: string): string {
@@ -15,6 +25,19 @@ function defaultOutputPath(inputPath: string): string {
     return inputPath.slice(0, -parsed.length) + ".pdf";
   }
   return `${inputPath}.pdf`;
+}
+
+function logDiagnostics(diagnostics: CvRenderDiagnostic[]): void {
+  for (const diagnostic of diagnostics) {
+    const location =
+      diagnostic.line !== undefined ? ` line ${diagnostic.line}:` : ":";
+    const prefix = `[cv-render:${diagnostic.code}]${location}`;
+    if (diagnostic.severity === "error") {
+      console.error(`${prefix} ${diagnostic.message}`);
+    } else {
+      console.warn(`${prefix} ${diagnostic.message}`);
+    }
+  }
 }
 
 async function launchBrowser() {
@@ -35,7 +58,9 @@ async function launchBrowser() {
   }
 }
 
-export async function runRenderCv(options: RenderCvOptions): Promise<string> {
+export async function runRenderCv(
+  options: RenderCvOptions,
+): Promise<RenderCvResult> {
   const inputPath = resolve(options.inputPath);
   if (!existsSync(inputPath)) {
     throw new Error(`Missing CV markdown: ${inputPath}`);
@@ -51,8 +76,11 @@ export async function runRenderCv(options: RenderCvOptions): Promise<string> {
 
   const markdown = readFileSync(inputPath, "utf8");
   const css = readFileSync(cssPath, "utf8");
-  const document = parseCvMarkdown(markdown);
+  const { document, diagnostics } = parseCvMarkdownWithDiagnostics(markdown);
+  logDiagnostics(diagnostics);
+
   const html = renderCvHtml(document, css);
+  assertNoInternalMetadataInHtml(html);
 
   const browser = await launchBrowser();
 
@@ -70,5 +98,5 @@ export async function runRenderCv(options: RenderCvOptions): Promise<string> {
   }
 
   console.log(`Wrote ${outputPath}`);
-  return outputPath;
+  return { outputPath, diagnostics };
 }

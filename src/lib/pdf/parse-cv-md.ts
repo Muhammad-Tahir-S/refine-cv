@@ -29,21 +29,75 @@ export interface CvDocument {
   sections: CvSection[];
 }
 
+export interface CvRenderDiagnostic {
+  severity: "warning" | "error";
+  code: string;
+  message: string;
+  line?: number;
+}
+
+export interface ParseCvMarkdownResult {
+  document: CvDocument;
+  diagnostics: CvRenderDiagnostic[];
+  sanitizedMarkdown: string;
+}
+
 const EVIDENCE_TAG_RE =
   /\s*`(?:verified-from-github|needs-your-confirmation)`\s*/gi;
-const METADATA_FOOTER_RE = /^_.*_(?:\s*)$/;
+const META_COMMENT_RE =
+  /<!--\s*(?:refine-cv:meta|cv-meta:)[\s\S]*?-->/g;
 const HORIZONTAL_RULE_RE = /^---+\s*$/;
 
-export function sanitizeCvMarkdown(markdown: string): string {
+const INTERNAL_METADATA_PATTERNS = [
+  /verified-from-github/i,
+  /needs-your-confirmation/i,
+  /refine-cv:meta/i,
+  /\bcv-meta:/i,
+] as const;
+
+export function sanitizeCvMarkdownWithDiagnostics(markdown: string): {
+  sanitized: string;
+  diagnostics: CvRenderDiagnostic[];
+} {
   const lines = markdown.split(/\r?\n/);
   const cleaned: string[] = [];
+  const diagnostics: CvRenderDiagnostic[] = [];
 
-  for (const line of lines) {
-    if (METADATA_FOOTER_RE.test(line.trim())) {
-      continue;
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? "";
+    const lineNumber = index + 1;
+
+    if (META_COMMENT_RE.test(line)) {
+      META_COMMENT_RE.lastIndex = 0;
+      diagnostics.push({
+        severity: "warning",
+        code: "meta_marker_removed",
+        message: "Removed refine-cv metadata marker",
+        line: lineNumber,
+      });
+    }
+    META_COMMENT_RE.lastIndex = 0;
+
+    const evidencePattern =
+      /\s*`(?:verified-from-github|needs-your-confirmation)`\s*/gi;
+    let evidenceMatch: RegExpExecArray | null;
+    while ((evidenceMatch = evidencePattern.exec(line)) !== null) {
+      const tag = evidenceMatch[0].trim().replace(/^`|`$/g, "");
+      diagnostics.push({
+        severity: "warning",
+        code: "evidence_tag_removed",
+        message: `Removed evidence tag \`${tag}\``,
+        line: lineNumber,
+      });
     }
 
-    const withoutTags = line.replace(EVIDENCE_TAG_RE, "").trimEnd();
+    const withoutMeta = line.replace(META_COMMENT_RE, "");
+    META_COMMENT_RE.lastIndex = 0;
+    const withoutTags = withoutMeta
+      .replace(/ ?`(?:verified-from-github|needs-your-confirmation)` ?/gi, " ")
+      .trimEnd();
+    EVIDENCE_TAG_RE.lastIndex = 0;
+
     if (withoutTags.trim() === "" && line.trim() !== "") {
       cleaned.push("");
       continue;
@@ -51,7 +105,117 @@ export function sanitizeCvMarkdown(markdown: string): string {
     cleaned.push(withoutTags);
   }
 
-  return cleaned.join("\n").trim();
+  return {
+    sanitized: cleaned.join("\n").trim(),
+    diagnostics,
+  };
+}
+
+export function sanitizeCvMarkdown(markdown: string): string {
+  return sanitizeCvMarkdownWithDiagnostics(markdown).sanitized;
+}
+
+function collectUnsupportedConstructDiagnostics(
+  lines: string[],
+): CvRenderDiagnostic[] {
+  const diagnostics: CvRenderDiagnostic[] = [];
+  let foundNameHeading = false;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? "";
+    const trimmed = line.trim();
+    const lineNumber = index + 1;
+
+    if (trimmed === "" || HORIZONTAL_RULE_RE.test(trimmed)) {
+      continue;
+    }
+
+    if (trimmed.startsWith("# ")) {
+      if (foundNameHeading) {
+        diagnostics.push({
+          severity: "warning",
+          code: "unsupported_heading",
+          message:
+            "Only one '# Name' heading at the document start is supported",
+          line: lineNumber,
+        });
+      } else {
+        foundNameHeading = true;
+      }
+      continue;
+    }
+
+    if (/^#{4,}\s/.test(trimmed)) {
+      diagnostics.push({
+        severity: "warning",
+        code: "unsupported_heading",
+        message: "Heading level 4 and above is not supported",
+        line: lineNumber,
+      });
+      continue;
+    }
+
+    if (/^#{1,3}\s/.test(trimmed)) {
+      continue;
+    }
+
+    if (/^\|.+\|/.test(trimmed) || /^:?-{3,}:?\s*(?:\||$)/.test(trimmed)) {
+      diagnostics.push({
+        severity: "warning",
+        code: "unsupported_table",
+        message: "Markdown tables are not supported",
+        line: lineNumber,
+      });
+      continue;
+    }
+
+    if (/!\[[^\]]*\]\([^)]+\)/.test(line)) {
+      diagnostics.push({
+        severity: "warning",
+        code: "unsupported_image",
+        message: "Markdown images are not supported",
+        line: lineNumber,
+      });
+      continue;
+    }
+
+    if (/^\s+- /.test(line)) {
+      diagnostics.push({
+        severity: "warning",
+        code: "unsupported_nested_list",
+        message: "Nested bullet lists are not supported",
+        line: lineNumber,
+      });
+      continue;
+    }
+
+    if (/<[a-zA-Z][^>]*>/.test(line)) {
+      diagnostics.push({
+        severity: "warning",
+        code: "unsupported_raw_html",
+        message: "Raw HTML blocks are not supported",
+        line: lineNumber,
+      });
+    }
+  }
+
+  return diagnostics;
+}
+
+function isOrphanAfterLastSection(
+  lines: string[],
+  startIndex: number,
+): boolean {
+  let index = startIndex + 1;
+  while (index < lines.length) {
+    const trimmed = (lines[index] ?? "").trim();
+    if (trimmed === "" || HORIZONTAL_RULE_RE.test(trimmed)) {
+      index += 1;
+      continue;
+    }
+    return false;
+  }
+  return true;
 }
 
 function escapeHtml(value: string): string {
@@ -147,8 +311,10 @@ function pushBlock(blocks: CvBlock[], block: CvBlock): void {
   blocks.push(block);
 }
 
-export function parseCvMarkdown(markdown: string): CvDocument {
-  const sanitized = sanitizeCvMarkdown(markdown);
+function parseCvDocument(
+  sanitized: string,
+  diagnostics: CvRenderDiagnostic[],
+): CvDocument {
   const lines = sanitized.split(/\r?\n/);
 
   let index = 0;
@@ -158,6 +324,12 @@ export function parseCvMarkdown(markdown: string): CvDocument {
 
   const nameLine = lines[index];
   if (!nameLine?.startsWith("# ")) {
+    diagnostics.push({
+      severity: "error",
+      code: "missing_name_heading",
+      message: "CV markdown must start with a '# Name' heading",
+      line: index + 1,
+    });
     throw new Error("CV markdown must start with a '# Name' heading");
   }
 
@@ -194,6 +366,13 @@ export function parseCvMarkdown(markdown: string): CvDocument {
     }
 
     if (!line.startsWith("## ")) {
+      diagnostics.push({
+        severity: "warning",
+        code: "orphan_content",
+        message:
+          "Content outside a '## Section' heading is ignored by the renderer",
+        line: index + 1,
+      });
       index += 1;
       continue;
     }
@@ -259,6 +438,18 @@ export function parseCvMarkdown(markdown: string): CvDocument {
         continue;
       }
 
+      if (isOrphanAfterLastSection(lines, index)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "orphan_content",
+          message:
+            "Content after the last section heading is ignored by the renderer",
+          line: index + 1,
+        });
+        index += 1;
+        continue;
+      }
+
       const block = parseParagraphBlock(currentLine);
       pushBlock(currentRole?.blocks ?? section.blocks, block);
       index += 1;
@@ -269,6 +460,56 @@ export function parseCvMarkdown(markdown: string): CvDocument {
   }
 
   return doc;
+}
+
+export function parseCvMarkdownWithDiagnostics(
+  markdown: string,
+): ParseCvMarkdownResult {
+  const { sanitized, diagnostics: sanitizeDiagnostics } =
+    sanitizeCvMarkdownWithDiagnostics(markdown);
+  const diagnostics = [
+    ...sanitizeDiagnostics,
+    ...collectUnsupportedConstructDiagnostics(sanitized.split(/\r?\n/)),
+  ];
+  const document = parseCvDocument(sanitized, diagnostics);
+
+  return {
+    document,
+    diagnostics,
+    sanitizedMarkdown: sanitized,
+  };
+}
+
+export function parseCvMarkdown(markdown: string): CvDocument {
+  return parseCvMarkdownWithDiagnostics(markdown).document;
+}
+
+export function findInternalMetadataLeaksInHtml(
+  html: string,
+): CvRenderDiagnostic[] {
+  const leaks: CvRenderDiagnostic[] = [];
+
+  for (const pattern of INTERNAL_METADATA_PATTERNS) {
+    const match = html.match(pattern);
+    if (match) {
+      leaks.push({
+        severity: "error",
+        code: "internal_metadata_leak",
+        message: `Rendered HTML contains internal metadata marker: ${match[0]}`,
+      });
+    }
+  }
+
+  return leaks;
+}
+
+export function assertNoInternalMetadataInHtml(html: string): void {
+  const leaks = findInternalMetadataLeaksInHtml(html);
+  if (leaks.length > 0) {
+    throw new Error(
+      `Rendered CV HTML contains internal metadata: ${leaks.map((leak) => leak.message).join("; ")}`,
+    );
+  }
 }
 
 export function renderInlineSpans(spans: InlineSpan[]): string {
