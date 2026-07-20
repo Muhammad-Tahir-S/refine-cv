@@ -1,48 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
-import { z } from "zod";
-import { paths } from "../paths.js";
 import type { GeoEligibility, JobPosting, RemoteScope } from "./types.js";
-
-const JobSearchConfigSchema = z.object({
-  version: z.number(),
-  applicant: z.object({
-    name: z.string().optional(),
-    location: z.string(),
-    citizenship: z.string(),
-    workPermitCountries: z.array(z.string()),
-  }),
-  geoEligibility: z.object({
-    summary: z.string(),
-    acceptGlobalRemote: z.boolean(),
-    acceptEmeaOnlyWhenAfricaMentioned: z.boolean(),
-    defaultEmeaToVerify: z.boolean(),
-  }),
-  roleFilters: z.object({
-    reactFrontend: z.boolean().optional(),
-    profile: z.enum(["reactFrontend", "nodejsBackend"]).optional(),
-    levels: z.array(z.string()),
-  }),
-  blocklist: z.array(z.string()).default([]),
-});
-
-export type JobSearchConfig = z.infer<typeof JobSearchConfigSchema>;
-export type RoleProfile = "reactFrontend" | "nodejsBackend";
-
-let jobSearchConfigOverride: string | null = null;
-
-export function setJobSearchConfigPath(configPath: string | null): void {
-  jobSearchConfigOverride = configPath;
-}
-
-export function resolveRoleProfile(config: JobSearchConfig): RoleProfile {
-  if (config.roleFilters.profile) {
-    return config.roleFilters.profile;
-  }
-  if (config.roleFilters.reactFrontend === false) {
-    return "nodejsBackend";
-  }
-  return "reactFrontend";
-}
+import type { GeoPolicy } from "./scan-policy.js";
 
 /** Signals the role explicitly allows Nigeria, Africa, or unrestricted global hire. */
 export const NIGERIA_POSITIVE_PATTERNS = [
@@ -87,30 +44,9 @@ export const GEO_EXCLUSION_PATTERNS = [
   /\bon-?site\b/i,
 ];
 
-export function loadJobSearchConfigAt(configPath: string): JobSearchConfig {
-  if (!existsSync(configPath)) {
-    throw new Error(`Missing job search config: ${configPath}`);
-  }
-  return JobSearchConfigSchema.parse(
-    JSON.parse(readFileSync(configPath, "utf8")),
-  );
-}
-
-export function loadJobSearchConfig(): JobSearchConfig {
-  const configPath = jobSearchConfigOverride ?? paths.jobSearchConfig;
-  return loadJobSearchConfigAt(configPath);
-}
-
-export function loadBlocklistAt(configPath?: string): string[] {
-  const resolved = configPath ?? jobSearchConfigOverride ?? paths.jobSearchConfig;
-  return loadJobSearchConfigAt(resolved).blocklist;
-}
-
-export function loadBlocklist(): string[] {
-  return loadBlocklistAt();
-}
-
-export function postingHaystack(posting: Pick<JobPosting, "location" | "description">): string {
+export function postingHaystack(
+  posting: Pick<JobPosting, "location" | "description">,
+): string {
   return `${posting.location}\n${posting.description}`;
 }
 
@@ -146,6 +82,7 @@ export function hasGeoExclusionSignal(haystack: string): boolean {
 
 export function classifyGeoEligibility(
   posting: Pick<JobPosting, "location" | "description" | "remoteScope">,
+  geoPolicy: GeoPolicy,
 ): GeoEligibility {
   const haystack = postingHaystack(posting);
 
@@ -153,8 +90,12 @@ export function classifyGeoEligibility(
     return "likely_excluded";
   }
 
-  if (locationImpliesEmeaOnly(posting.location) && !hasExplicitAfricaOrNigeriaSignal(haystack)) {
-    return "verify_geo";
+  if (
+    geoPolicy.acceptEmeaOnlyWhenAfricaMentioned &&
+    locationImpliesEmeaOnly(posting.location) &&
+    !hasExplicitAfricaOrNigeriaSignal(haystack)
+  ) {
+    return geoPolicy.defaultEmeaToVerify ? "verify_geo" : "likely_excluded";
   }
 
   if (hasNigeriaPositiveSignal(haystack)) {
@@ -162,14 +103,18 @@ export function classifyGeoEligibility(
   }
 
   if (posting.remoteScope === "global") {
-    return "nigeria_eligible";
+    return geoPolicy.acceptGlobalRemote ? "nigeria_eligible" : "verify_geo";
   }
 
   if (posting.remoteScope === "regional") {
     return "likely_excluded";
   }
 
-  return "verify_geo";
+  if (posting.remoteScope === "emea" || posting.remoteScope === "unknown") {
+    return geoPolicy.defaultEmeaToVerify ? "verify_geo" : "nigeria_eligible";
+  }
+
+  return geoPolicy.defaultEmeaToVerify ? "verify_geo" : "nigeria_eligible";
 }
 
 export function geoEligibilityLabel(eligibility: GeoEligibility): string {
@@ -202,4 +147,14 @@ export function geoExclusionReason(
 
 export function isRestrictedRemoteScope(scope: RemoteScope): boolean {
   return scope === "regional";
+}
+
+export function withGeoEligibilityForPolicy(
+  posting: JobPosting,
+  geoPolicy: GeoPolicy,
+): JobPosting {
+  return {
+    ...posting,
+    geoEligibility: classifyGeoEligibility(posting, geoPolicy),
+  };
 }

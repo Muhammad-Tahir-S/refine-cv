@@ -4,6 +4,11 @@ import { paths } from "../paths.js";
 import { runScanPipeline, partitionScanResults } from "./pipeline.js";
 import { renderScanReport } from "./report.js";
 import {
+  loadAndCompileScanPolicy,
+  serializeScanPolicy,
+  type ScanPolicy,
+} from "./scan-policy.js";
+import {
   loadScanState,
   saveMergedAppliedFromReports,
   saveScanState,
@@ -15,11 +20,22 @@ function todaySlug(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export async function runJobScan(): Promise<ScanRunResult> {
+export interface RunJobScanOptions {
+  configPath?: string;
+  profileOverride?: ScanPolicy["roleProfile"];
+}
+
+export async function runJobScan(
+  options: RunJobScanOptions = {},
+): Promise<ScanRunResult> {
+  const policy = loadAndCompileScanPolicy({
+    configPath: options.configPath,
+    profileOverride: options.profileOverride,
+  });
   const appliedState = saveMergedAppliedFromReports(paths.jobsDir);
   let scanState = loadScanState();
 
-  const pipeline = await runScanPipeline();
+  const pipeline = await runScanPipeline(policy);
   const { newJobs, previouslySeen, stateEntries } = partitionScanResults(
     pipeline.matched,
     scanState,
@@ -38,9 +54,11 @@ export async function runJobScan(): Promise<ScanRunResult> {
   const outputDir = join(paths.jobsDir, `${todaySlug()}-job-scan`);
   mkdirSync(outputDir, { recursive: true });
 
+  const serializedPolicy = serializeScanPolicy(policy);
   const result: ScanRunResult = {
     scanDate,
     outputDir,
+    policy: serializedPolicy,
     allMatched: pipeline.matched,
     newJobs,
     previouslySeen,

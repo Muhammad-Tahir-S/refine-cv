@@ -325,6 +325,7 @@ After applying:
 | Script | Purpose |
 |--------|---------|
 | `pnpm scan-jobs` | Board scan → report + raw JSON |
+| `pnpm scan-jobs --config config/job-search-nodejs-backend.json` | Backend/Node.js board scan |
 | `pnpm test` | Job scan unit tests (Vitest) |
 | `pnpm mark-applied` | Sync applied checkboxes to state file |
 | `pnpm linkedin:login` | Save LinkedIn session (Chrome via Playwright) |
@@ -334,7 +335,8 @@ After applying:
 **Config**
 
 - `config/job-sources.json` — enabled public job boards
-- `config/job-search.json` — geo criteria, role filters, employer blocklist
+- `config/job-search.json` — geo criteria, role filters, employer blocklist (default React/frontend scan)
+- `config/job-search-nodejs-backend.json` — Node.js/backend profile with junior/mid levels
 
 **State** (auto-created, outside repo)
 

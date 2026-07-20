@@ -5,7 +5,8 @@ import { type BrowserContext, type Page, type Response } from "playwright";
 import { paths } from "../paths.js";
 import { launchChromeContext } from "./browser.js";
 import { isBlocklisted, normalizeCompanyName } from "./dedupe.js";
-import { loadBlocklistAt, type RoleProfile } from "./geo.js";
+import { loadBlocklistAt } from "./scan-policy.js";
+import type { RoleProfile } from "./role-profile.js";
 import {
   buildLinkedInSearchUrl,
   filterByLinkedInRoleProfile,

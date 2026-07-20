@@ -16,7 +16,7 @@ next phase begins.
 
 - [x] Phase 0: establish and record the baseline
 - [x] Phase 1: restore build and LinkedIn CLI integrity
-- [ ] Phase 2: introduce executable search policies
+- [x] Phase 2: introduce executable search policies
 - [ ] Phase 3: separate profile and job lifecycle state
 - [ ] Phase 4: make persistence transactional
 - [ ] Phase 5: harden HTTP and polling behavior

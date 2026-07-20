@@ -12,7 +12,9 @@ import {
 import { filterPostings } from "../../src/lib/jobs/filter.ts";
 import { decodeHtmlEntities, normalizeRawPosting } from "../../src/lib/jobs/normalize.ts";
 import { renderScanReport } from "../../src/lib/jobs/report.ts";
+import { loadAndCompileScanPolicy, serializeScanPolicy } from "../../src/lib/jobs/scan-policy.ts";
 import type { JobPosting, ScanRunResult } from "../../src/lib/jobs/types.ts";
+import { paths } from "../../src/lib/paths.ts";
 
 describe("dedupe", () => {
   it("prefers canonical URL keys", () => {
@@ -146,6 +148,7 @@ describe("wwr rss parser", () => {
 
 describe("report", () => {
   it("includes all matched listings in markdown tables", () => {
+    const policy = loadAndCompileScanPolicy({ configPath: paths.jobSearchConfig });
     const posting = normalizeRawPosting(
       {
         sourceId: "jobicy",
@@ -163,6 +166,7 @@ describe("report", () => {
     const result: ScanRunResult = {
       scanDate: "18 July 2026",
       outputDir: "/tmp/job-scan",
+      policy: serializeScanPolicy(policy),
       allMatched: [posting],
       newJobs: [],
       previouslySeen: [posting],
@@ -177,11 +181,13 @@ describe("report", () => {
     expect(markdown).toContain("Senior Frontend Engineer");
     expect(markdown).toContain("| Seen |");
     expect(markdown).toContain("this Markdown file");
+    expect(markdown).toContain("Effective scan policy");
   });
 });
 
 describe("filter", () => {
   it("matches react frontend roles", () => {
+    const policy = loadAndCompileScanPolicy({ configPath: paths.jobSearchConfig });
     const base: JobPosting = normalizeRawPosting(
       {
         sourceId: "remotive",
@@ -195,7 +201,7 @@ describe("filter", () => {
       "2026-07-18T00:00:00.000Z",
     );
 
-    const { matched } = filterPostings([base]);
+    const { matched } = filterPostings([base], policy);
     expect(matched.length).toBe(1);
   });
 });

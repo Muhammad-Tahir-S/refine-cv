@@ -31,7 +31,7 @@ These boards were evaluated but not integrated because terms forbid automation, 
 
 - Enable/disable boards in `config/job-sources.json`
 - Employer blocklist lives in `config/job-search.json` (`blocklist` array)
-- Search/geo criteria in `config/job-search.json`
+- Search/geo criteria in `config/job-search.json` (default React/frontend) or `config/job-search-nodejs-backend.json` (Node.js/backend)
 
 ## Polling guidance
 

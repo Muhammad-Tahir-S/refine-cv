@@ -69,7 +69,7 @@ describe("linkedin option parsing", () => {
   it("accepts supported role profiles only", () => {
     expect(parseRoleProfile("reactFrontend")).toBe("reactFrontend");
     expect(parseRoleProfile("nodejsBackend")).toBe("nodejsBackend");
-    expect(() => parseRoleProfile("fullstack")).toThrow(/Invalid --role/);
+    expect(() => parseRoleProfile("fullstack")).toThrow(/Invalid role profile/);
   });
 });
 

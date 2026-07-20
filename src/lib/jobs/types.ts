@@ -1,3 +1,5 @@
+import type { SerializedScanPolicy } from "./scan-policy.js";
+
 export type JobSourceId =
   | "himalayas"
   | "jobicy"
@@ -13,6 +15,7 @@ export type RemoteScope = "global" | "emea" | "regional" | "unknown";
 export type GeoEligibility = "nigeria_eligible" | "verify_geo" | "likely_excluded";
 
 export type LevelHint = "junior" | "mid" | "senior" | "staff_lead" | "unknown";
+
 
 export interface JobPosting {
   company: string;
@@ -113,9 +116,11 @@ export interface SourceStats {
   failed: boolean;
 }
 
+
 export interface ScanRunResult {
   scanDate: string;
   outputDir: string;
+  policy: SerializedScanPolicy;
   allMatched: JobPosting[];
   newJobs: JobPosting[];
   previouslySeen: JobPosting[];

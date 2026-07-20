@@ -1,5 +1,6 @@
 import type { GeoEligibility, JobPosting, ScanRunResult } from "./types.js";
-import { geoEligibilityLabel, loadJobSearchConfig, resolveRoleProfile } from "./geo.js";
+import { geoEligibilityLabel } from "./geo.js";
+import type { SerializedScanPolicy } from "./scan-policy.js";
 
 function escapeCell(value: string): string {
   return value.replace(/\|/g, "\\|").replace(/\n/g, " ");
@@ -115,20 +116,39 @@ function sourceStatsTable(result: ScanRunResult): string {
   return `${header}${rows}\n`;
 }
 
-export function renderScanReport(result: ScanRunResult, options: { isolated?: boolean } = {}): string {
-  const config = loadJobSearchConfig();
-  const profile = resolveRoleProfile(config);
-  const roleCriteria =
-    profile === "nodejsBackend"
-      ? "- Node.js / backend focus (NestJS, Express, API/server-side)\n- Junior → mid level (senior/staff flagged and excluded when configured)"
-      : "- React / frontend focus\n- Junior → senior level (staff/lead flagged, not dropped)";
-  const configLabel = options.isolated
-    ? "`config/job-search-nodejs-backend.json` (isolated run)"
-    : "`config/job-search.json`";
-  const filterLabel =
-    profile === "nodejsBackend"
-      ? "Node.js/backend + geo eligibility"
-      : "React/frontend + geo eligibility";
+function formatAllowedLevels(levels: JobPosting["level"][]): string {
+  return levels
+    .map((level) => {
+      switch (level) {
+        case "staff_lead":
+          return "staff/lead";
+        default:
+          return level;
+      }
+    })
+    .join(", ");
+}
+
+function policyCriteriaLines(policy: SerializedScanPolicy): string {
+  const roleLine =
+    policy.roleProfile === "nodejsBackend"
+      ? "- Node.js / backend focus (NestJS, Express, API/server-side)\n"
+      : "- React / frontend focus\n";
+  const levelsLine = `- Allowed levels: ${formatAllowedLevels(policy.allowedLevels)}\n`;
+  return `${roleLine}${levelsLine}`;
+}
+
+function policyJsonBlock(result: ScanRunResult): string {
+  return `\`\`\`json
+${JSON.stringify(result.policy, null, 2)}
+\`\`\``;
+}
+
+export function renderScanReport(result: ScanRunResult): string {
+  const policy = result.policy;
+  const roleCriteria = policyCriteriaLines(policy);
+  const configLabel = `\`${policy.configLabel}\``;
+  const filterLabel = `${policy.roleProfileLabel} + geo eligibility`;
   const statusByKey = buildStatusMap(result);
   const newNigeriaEligible = result.newJobs.filter(
     (job) => job.geoEligibility === "nigeria_eligible",
@@ -173,7 +193,7 @@ export function renderScanReport(result: ScanRunResult, options: { isolated?: bo
 **Scan date:** ${result.scanDate}  
 **Primary output:** this Markdown file (\`report.md\`). \`raw.json\` is a machine archive only.  
 **Source:** Public job boards (\`config/job-sources.json\`) — Himalayas, Jobicy, Remotive, Arbeitnow, Remote OK, We Work Remotely, HN Who is Hiring  
-**Applicant geo:** ${config.applicant.citizenship} citizen, work permit in ${config.applicant.workPermitCountries.join(", ")} only (${configLabel})  
+**Applicant geo:** ${policy.applicant.citizenship} citizen, work permit in ${policy.applicant.workPermitCountries.join(", ")} only (${configLabel})
 **New this run:** ${newSummary}  
 **Criteria:**
 ${roleCriteria}
@@ -183,11 +203,17 @@ ${roleCriteria}
 
 ---
 
+## Effective scan policy
+
+${policyJsonBlock(result)}
+
+---
+
 ## Method
 
 1. Fetch enabled public job boards from \`config/job-sources.json\` (no login required).
-2. Normalize listings, apply employer blocklist from \`config/job-search.json\`.
-3. Filter for ${filterLabel} (\`src/lib/jobs/geo.ts\`).
+2. Normalize listings, apply employer blocklist from \`${policy.configLabel}\`.
+3. Filter for ${filterLabel} using the policy above.
 4. Dedupe against \`~/.config/refine-cv/scan-state.json\` and applied jobs from prior report checkboxes.
 5. LinkedIn discovery remains optional (\`pnpm discover-linkedin\`) and separate from this scan.
 
@@ -243,7 +269,7 @@ ${fetchErrors}
 
 ## Excluded sample (first 15)
 
-Includes likely geo exclusions (EU/UK/US-only, hybrid, Africa excluded) and non-matching roles.
+Includes likely geo exclusions (EU/UK/US-only, hybrid, Africa excluded), role mismatches, and disallowed levels.
 
 ${excludedSample}
 

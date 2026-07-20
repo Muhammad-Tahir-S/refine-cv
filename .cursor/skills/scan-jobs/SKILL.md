@@ -12,7 +12,8 @@ description: >-
 ## Prerequisites
 
 - Job board sources: `config/job-sources.json`
-- Geo / role / blocklist: `config/job-search.json`
+- Geo / role / blocklist: `config/job-search.json` (default React/frontend)
+- Backend scan config: `config/job-search-nodejs-backend.json`
 - Scan state (auto-created): `~/.config/refine-cv/scan-state.json`
 - Applied jobs (auto-synced from report checkboxes): `~/.config/refine-cv/applied-jobs.json`
 - Criteria: React/frontend remote roles for a Nigerian applicant (`config/job-search.json`); Nigeria-eligible vs verify-geo vs likely-excluded geo tiers
@@ -23,6 +24,8 @@ description: >-
 
 ```bash
 pnpm scan-jobs
+pnpm scan-jobs --config config/job-search-nodejs-backend.json
+pnpm scan-jobs --config config/job-search.json --profile nodejsBackend
 ```
 
 This:

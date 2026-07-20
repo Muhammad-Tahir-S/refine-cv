@@ -1,4 +1,6 @@
-import type { RoleProfile } from "./geo.js";
+import type { RoleProfile } from "./role-profile.js";
+
+export { parseRoleProfile, type RoleProfile } from "./role-profile.js";
 
 export const LINKEDIN_MAX_PAGES = 3;
 export const LINKEDIN_DEFAULT_KEYWORDS = "react frontend";
@@ -103,16 +105,6 @@ export function resolveMaxPages(input: string | number): number {
   }
 
   return parsed;
-}
-
-export function parseRoleProfile(input: string): RoleProfile {
-  if (input === "reactFrontend" || input === "nodejsBackend") {
-    return input;
-  }
-
-  throw new Error(
-    `Invalid --role "${input}". Use reactFrontend or nodejsBackend.`,
-  );
 }
 
 export function buildLinkedInSearchUrl(

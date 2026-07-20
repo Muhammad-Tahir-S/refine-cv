@@ -1,8 +1,8 @@
 import { getBoardAdapter } from "./boards/index.js";
 import { isBlocklisted } from "./dedupe.js";
 import { filterPostings } from "./filter.js";
-import { loadBlocklist } from "./geo.js";
 import { normalizeRawPosting } from "./normalize.js";
+import type { ScanPolicy } from "./scan-policy.js";
 import { getEnabledSources, loadJobSourcesConfig } from "./sources/registry.js";
 import type {
   JobPosting,
@@ -46,12 +46,13 @@ export interface PipelineFetchResult {
 }
 
 export async function fetchAllBoardPostings(
+  policy: ScanPolicy,
   sources: JobSourceEntry[] = getEnabledSources(),
   fetchedAt: string = new Date().toISOString(),
 ): Promise<PipelineFetchResult> {
   const fetchErrors: SourceFetchError[] = [];
   const sourceStats: SourceStats[] = [];
-  const blocklist = loadBlocklist();
+  const blocklist = policy.blocklist;
   const allPostings: JobPosting[] = [];
   let blocklistExcluded = 0;
 
@@ -162,7 +163,7 @@ export function attachSourceMatchCounts(
   }));
 }
 
-export async function runScanPipeline(): Promise<{
+export async function runScanPipeline(policy: ScanPolicy): Promise<{
   fetchedAt: string;
   allRaw: JobPosting[];
   matched: JobPosting[];
@@ -174,8 +175,8 @@ export async function runScanPipeline(): Promise<{
   const fetchedAt = new Date().toISOString();
   loadJobSourcesConfig();
   const { postings, fetchErrors, sourceStats, blocklistExcluded } =
-    await fetchAllBoardPostings(undefined, fetchedAt);
-  const { matched, excluded } = filterPostings(postings);
+    await fetchAllBoardPostings(policy, undefined, fetchedAt);
+  const { matched, excluded } = filterPostings(postings, policy);
 
   return {
     fetchedAt,
