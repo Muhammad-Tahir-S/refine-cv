@@ -297,6 +297,7 @@ Find new React frontend remote roles from public job boards; optionally run low-
 
 ```
 pnpm scan-jobs
+  → enforce minPollHours cadence (source-poll-state.json) unless --force
   → fetch enabled boards in config/job-sources.json (Himalayas, Jobicy, Remotive, etc.)
   → apply employer blocklist from config/job-search.json
   → filter: React/FE, remote scope, seniority
@@ -326,6 +327,7 @@ After applying:
 | Script | Purpose |
 |--------|---------|
 | `pnpm scan-jobs` | Board scan → report + raw JSON |
+| `pnpm scan-jobs --force` | Bypass per-source minPollHours cadence |
 | `pnpm scan-jobs --config config/job-search-nodejs-backend.json` | Backend/Node.js board scan |
 | `pnpm test` | Job scan unit tests (Vitest) |
 | `pnpm mark-applied` | Sync applied checkboxes to state file |
@@ -342,6 +344,7 @@ After applying:
 **State** (auto-created, outside repo)
 
 - `~/.config/refine-cv/scan-state.json` — profile-aware seen job IDs (v3: `reactFrontend` / `nodejsBackend` maps)
+- `~/.config/refine-cv/source-poll-state.json` — profile-aware per-board poll cadence (v2: attempt/success/failure timestamps)
 - `~/.config/refine-cv/applied-jobs.json` — job lifecycle state (v2: `applied`, `dismissed`, `expired`)
 - `~/.config/refine-cv/job-scan.lock` — exclusive scan lock (auto-created; stale inactive locks are recovered)
 - `jobs/.latest-{role-profile}-job-scan.json` — pointer to the newest completed board scan for that profile

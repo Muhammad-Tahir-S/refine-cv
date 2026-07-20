@@ -1,5 +1,9 @@
 import { paths } from "../paths.js";
-import { runScanPipeline, partitionScanResults } from "./pipeline.js";
+import {
+  computeNextSourcePollState,
+  partitionScanResults,
+  runScanPipeline,
+} from "./pipeline.js";
 import { renderScanReport } from "./report.js";
 import {
   loadAndCompileScanPolicy,
@@ -13,6 +17,11 @@ import {
   resolveUniqueRunPaths,
   writeLatestRunPointer,
 } from "./scan-run.js";
+import {
+  loadSourcePollState,
+  saveSourcePollState,
+  SOURCE_POLL_STATE_PATH,
+} from "./source-poll-state.js";
 import {
   APPLIED_JOBS_PATH,
   mergeAppliedFromReports,
@@ -28,6 +37,7 @@ export interface JobScanPaths {
   jobsDir: string;
   scanStatePath: string;
   lifecycleStatePath: string;
+  sourcePollStatePath: string;
   lockPath: string;
 }
 
@@ -39,11 +49,13 @@ export interface JobScanClock {
 export interface JobScanPersistence {
   saveScanState: typeof saveScanState;
   saveJobLifecycleState: typeof saveJobLifecycleState;
+  saveSourcePollState: typeof saveSourcePollState;
 }
 
 export interface RunJobScanOptions {
   configPath?: string;
   profileOverride?: ScanPolicy["roleProfile"];
+  forcePoll?: boolean;
   paths?: Partial<JobScanPaths>;
   clock?: Partial<JobScanClock>;
   runPipeline?: typeof runScanPipeline;
@@ -56,6 +68,7 @@ function defaultPaths(overrides: Partial<JobScanPaths> = {}): JobScanPaths {
     jobsDir: overrides.jobsDir ?? paths.jobsDir,
     scanStatePath: overrides.scanStatePath ?? SCAN_STATE_PATH,
     lifecycleStatePath: overrides.lifecycleStatePath ?? APPLIED_JOBS_PATH,
+    sourcePollStatePath: overrides.sourcePollStatePath ?? SOURCE_POLL_STATE_PATH,
     lockPath: overrides.lockPath ?? DEFAULT_SCAN_LOCK_PATH,
   };
 }
@@ -90,6 +103,8 @@ export async function runJobScan(
     saveScanState: options.persistence?.saveScanState ?? saveScanState,
     saveJobLifecycleState:
       options.persistence?.saveJobLifecycleState ?? saveJobLifecycleState,
+    saveSourcePollState:
+      options.persistence?.saveSourcePollState ?? saveSourcePollState,
   };
 
   const lock = acquireScanLock({
@@ -104,8 +119,13 @@ export async function runJobScan(
       scanPaths.lifecycleStatePath,
     );
     const scanState = loadScanState(scanPaths.scanStatePath);
+    const pollState = loadSourcePollState(scanPaths.sourcePollStatePath);
 
-    const pipeline = await runPipeline(policy);
+    const pipeline = await runPipeline(policy, {
+      forcePoll: options.forcePoll,
+      pollState,
+      now: clock.now,
+    });
     const {
       activeMatched,
       newJobs,
@@ -120,12 +140,19 @@ export async function runJobScan(
     );
 
     const observedAt = clock.now().toISOString();
-    const nextScanState = updateScanState(
-      scanState,
+    const nextPollState = computeNextSourcePollState(
+      pollState,
       policy.roleProfile,
-      stateEntries,
-      observedAt,
+      pipeline.pollStateUpdates,
     );
+    const nextScanState = pipeline.hadSuccessfulSourceFetch
+      ? updateScanState(
+          scanState,
+          policy.roleProfile,
+          stateEntries,
+          observedAt,
+        )
+      : scanState;
 
     const { runId, finalOutputDir, stagingOutputDir } = resolveUniqueRunPaths(
       scanPaths.jobsDir,
@@ -147,6 +174,8 @@ export async function runJobScan(
       blocklistExcluded: pipeline.blocklistExcluded,
       fetchErrors: pipeline.fetchErrors,
       sourceStats: pipeline.sourceStats,
+      outcome: pipeline.outcome,
+      hadSuccessfulSourceFetch: pipeline.hadSuccessfulSourceFetch,
     };
 
     publishArtifacts({
@@ -170,6 +199,7 @@ export async function runJobScan(
       lifecycleState,
       scanPaths.lifecycleStatePath,
     );
+    persistence.saveSourcePollState(nextPollState, scanPaths.sourcePollStatePath);
 
     return result;
   } finally {

@@ -19,6 +19,7 @@ import {
   StateCorruptionError,
 } from "../../src/lib/jobs/persistence.ts";
 import { runJobScan } from "../../src/lib/jobs/scan.ts";
+import { saveSourcePollState } from "../../src/lib/jobs/source-poll-state.ts";
 import {
   acquireScanLock,
   releaseScanLock,
@@ -91,6 +92,16 @@ function emptyPipeline(posting: JobPosting) {
     fetchErrors: [],
     sourceStats: [],
     blocklistExcluded: 0,
+    pollStateUpdates: [],
+    hadSuccessfulSourceFetch: true,
+    outcome: {
+      attemptedSources: 0,
+      skippedSources: 0,
+      succeededSources: 0,
+      failedSources: 0,
+      allSkippedDueToCadence: false,
+      totalSourceOutage: false,
+    },
   };
 }
 
@@ -414,6 +425,7 @@ describe("runJobScan durability ordering", () => {
     const jobsDir = join(root, "jobs");
     const scanStatePath = join(root, "scan-state.json");
     const lifecycleStatePath = join(root, "applied-jobs.json");
+    const sourcePollStatePath = join(root, "source-poll-state.json");
     const lockPath = join(root, "job-scan.lock");
     const posting = samplePosting();
 
@@ -429,7 +441,13 @@ describe("runJobScan durability ordering", () => {
     await expect(
       runJobScan({
         configPath: paths.jobSearchConfig,
-        paths: { jobsDir, scanStatePath, lifecycleStatePath, lockPath },
+        paths: {
+          jobsDir,
+          scanStatePath,
+          lifecycleStatePath,
+          sourcePollStatePath,
+          lockPath,
+        },
         clock: fixedClock("2026-07-20T10:00:00.000Z"),
         runPipeline: async () => emptyPipeline(posting),
         publishArtifacts: () => {
@@ -453,12 +471,19 @@ describe("runJobScan durability ordering", () => {
     const jobsDir = join(root, "jobs");
     const scanStatePath = join(root, "scan-state.json");
     const lifecycleStatePath = join(root, "applied-jobs.json");
+    const sourcePollStatePath = join(root, "source-poll-state.json");
     const lockPath = join(root, "job-scan.lock");
     const posting = samplePosting();
 
     const result = await runJobScan({
       configPath: paths.jobSearchConfig,
-      paths: { jobsDir, scanStatePath, lifecycleStatePath, lockPath },
+      paths: {
+        jobsDir,
+        scanStatePath,
+        lifecycleStatePath,
+        sourcePollStatePath,
+        lockPath,
+      },
       clock: fixedClock("2026-07-20T10:00:00.000Z", "run001"),
       runPipeline: async () => emptyPipeline(posting),
       publishArtifacts: (input) => {
@@ -477,25 +502,34 @@ describe("runJobScan durability ordering", () => {
     expect(loadScanState(scanStatePath).profiles.reactFrontend[posting.dedupeKey]).toBeDefined();
   });
 
-  it.each(["scan-state", "lifecycle-state"] as const)(
+  it.each(["scan-state", "lifecycle-state", "source-poll-state"] as const)(
     "keeps the report and releases the lock when %s persistence fails",
     async (failingWrite) => {
       const root = makeTempDir();
       const jobsDir = join(root, "jobs");
       const scanStatePath = join(root, "scan-state.json");
       const lifecycleStatePath = join(root, "applied-jobs.json");
+      const sourcePollStatePath = join(root, "source-poll-state.json");
       const lockPath = join(root, "job-scan.lock");
       const posting = samplePosting();
       const failure = new Error(`${failingWrite} write failed`);
+      const suffixByWrite = {
+        "scan-state": "fail01",
+        "lifecycle-state": "fail02",
+        "source-poll-state": "fail03",
+      } as const;
 
       await expect(
         runJobScan({
           configPath: paths.jobSearchConfig,
-          paths: { jobsDir, scanStatePath, lifecycleStatePath, lockPath },
-          clock: fixedClock(
-            "2026-07-20T10:00:00.000Z",
-            failingWrite === "scan-state" ? "fail01" : "fail02",
-          ),
+          paths: {
+            jobsDir,
+            scanStatePath,
+            lifecycleStatePath,
+            sourcePollStatePath,
+            lockPath,
+          },
+          clock: fixedClock("2026-07-20T10:00:00.000Z", suffixByWrite[failingWrite]),
           runPipeline: async () => emptyPipeline(posting),
           persistence: {
             saveScanState:
@@ -510,6 +544,12 @@ describe("runJobScan durability ordering", () => {
                     throw failure;
                   }
                 : saveJobLifecycleState,
+            saveSourcePollState:
+              failingWrite === "source-poll-state"
+                ? () => {
+                    throw failure;
+                  }
+                : saveSourcePollState,
           },
         }),
       ).rejects.toThrow(failure.message);

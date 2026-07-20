@@ -1,14 +1,23 @@
+import { HttpRequestError } from "./http-client.js";
 import { getBoardAdapter } from "./boards/index.js";
 import { findInStateMap, isBlocklisted, isKnownInState } from "./dedupe.js";
 import { filterPostings } from "./filter.js";
 import { normalizeRawPosting } from "./normalize.js";
 import type { ScanPolicy } from "./scan-policy.js";
+import {
+  applySourcePollUpdates,
+  loadSourcePollState,
+  shouldSkipSourcePoll,
+  type SourcePollState,
+  type SourcePollUpdate,
+} from "./source-poll-state.js";
 import { getEnabledSources, loadJobSourcesConfig } from "./sources/registry.js";
 import type {
   JobPosting,
   JobSourceEntry,
   JobLifecycleState,
   LifecycleSuppressedCounts,
+  ScanRunOutcome,
   ScanRunResult,
   ScanStateEntry,
   SourceFetchError,
@@ -23,16 +32,16 @@ const MAX_CONCURRENT = 3;
 async function mapWithConcurrency<T, R>(
   items: T[],
   limit: number,
-  fn: (item: T) => Promise<R>,
+  fn: (item: T, index: number) => Promise<R>,
 ): Promise<R[]> {
-  const results: R[] = [];
+  const results: R[] = new Array(items.length);
   let index = 0;
 
   async function worker(): Promise<void> {
     while (index < items.length) {
       const current = index;
       index += 1;
-      results[current] = await fn(items[current]);
+      results[current] = await fn(items[current], current);
     }
   }
 
@@ -46,69 +55,252 @@ export interface PipelineFetchResult {
   fetchErrors: SourceFetchError[];
   sourceStats: SourceStats[];
   blocklistExcluded: number;
+  pollStateUpdates: SourcePollUpdate[];
+  hadSuccessfulSourceFetch: boolean;
+  outcome: ScanRunOutcome;
+}
+
+interface SourceWorkerResult {
+  sourceIndex: number;
+  postings: JobPosting[];
+  stat: SourceStats;
+  fetchError?: SourceFetchError;
+  blocklistExcluded: number;
+  pollStateUpdate?: SourcePollUpdate;
+}
+
+function formatFetchError(error: unknown): SourceFetchError["error"] {
+  if (error instanceof HttpRequestError) {
+    return error.message;
+  }
+  return error instanceof Error ? error.message : String(error);
+}
+
+function buildFetchError(
+  source: JobSourceEntry,
+  error: unknown,
+): SourceFetchError {
+  const base: SourceFetchError = {
+    sourceId: source.id,
+    adapter: source.adapter,
+    error: formatFetchError(error),
+  };
+
+  if (error instanceof HttpRequestError) {
+    return {
+      ...base,
+      status: error.status,
+      attempts: error.attempts,
+      retryable: error.retryable,
+    };
+  }
+
+  return base;
+}
+
+function buildPollFailureUpdate(
+  sourceId: string,
+  attemptedAt: string,
+  completedAt: string,
+  error: unknown,
+): SourcePollUpdate {
+  const update: SourcePollUpdate = {
+    sourceId,
+    outcome: "failure",
+    attemptedAt,
+    completedAt,
+  };
+
+  if (error instanceof HttpRequestError) {
+    update.error = {
+      message: error.message,
+      status: error.status,
+      attempts: error.attempts,
+    };
+  } else {
+    update.error = {
+      message: formatFetchError(error),
+    };
+  }
+
+  return update;
+}
+
+export function evaluateScanOutcome(sourceStats: SourceStats[]): ScanRunOutcome {
+  const skippedSources = sourceStats.filter((stat) => stat.status === "skipped").length;
+  const attemptedSources = sourceStats.length - skippedSources;
+  const succeededSources = sourceStats.filter((stat) => stat.status === "success").length;
+  const failedSources = sourceStats.filter((stat) => stat.status === "failure").length;
+
+  return {
+    attemptedSources,
+    skippedSources,
+    succeededSources,
+    failedSources,
+    allSkippedDueToCadence:
+      sourceStats.length > 0 && skippedSources === sourceStats.length,
+    totalSourceOutage:
+      attemptedSources > 0 && failedSources === attemptedSources,
+  };
+}
+
+export interface FetchAllBoardPostingsOptions {
+  policy: ScanPolicy;
+  sources?: JobSourceEntry[];
+  fetchedAt?: string;
+  pollState?: SourcePollState;
+  forcePoll?: boolean;
+  now?: () => Date;
 }
 
 export async function fetchAllBoardPostings(
-  policy: ScanPolicy,
-  sources: JobSourceEntry[] = getEnabledSources(),
-  fetchedAt: string = new Date().toISOString(),
+  options: FetchAllBoardPostingsOptions,
 ): Promise<PipelineFetchResult> {
-  const fetchErrors: SourceFetchError[] = [];
-  const sourceStats: SourceStats[] = [];
+  const {
+    policy,
+    sources = getEnabledSources(),
+    fetchedAt = new Date().toISOString(),
+    pollState = loadSourcePollState(),
+    forcePoll = false,
+    now = () => new Date(),
+  } = options;
   const blocklist = policy.blocklist;
-  const allPostings: JobPosting[] = [];
-  let blocklistExcluded = 0;
 
-  const results = await mapWithConcurrency(sources, MAX_CONCURRENT, async (source) => {
-    try {
-      const adapter = getBoardAdapter(source.adapter);
-      const result = await adapter.fetch(source);
-      const normalized = result.postings.map((raw) => normalizeRawPosting(raw, fetchedAt));
-      const kept: JobPosting[] = [];
+  const workerResults = await mapWithConcurrency(
+    sources,
+    MAX_CONCURRENT,
+    async (source, sourceIndex): Promise<SourceWorkerResult> => {
+      const attemptedAt = now().toISOString();
+      const minPollHours = source.minPollHours ?? 0;
+      const cadence = shouldSkipSourcePoll(
+        pollState.profiles[policy.roleProfile][source.id],
+        minPollHours,
+        now(),
+        forcePoll,
+      );
 
-      for (const posting of normalized) {
-        if (isBlocklisted(posting.company, blocklist)) {
-          blocklistExcluded += 1;
-          continue;
-        }
-        kept.push(posting);
+      if (cadence.skip) {
+        return {
+          sourceIndex,
+          postings: [],
+          blocklistExcluded: 0,
+          stat: {
+            sourceId: source.id,
+            adapter: source.adapter,
+            status: "skipped",
+            skipReason: cadence.reason,
+            fetched: 0,
+            normalized: 0,
+            quarantined: 0,
+            matched: 0,
+            durationMs: 0,
+            failed: false,
+          },
+        };
       }
 
-      sourceStats.push({
-        sourceId: source.id,
-        adapter: source.adapter,
-        fetched: result.postings.length,
-        normalized: normalized.length,
-        quarantined: result.quarantined,
-        matched: 0,
-        failed: false,
-      });
+      const startedAt = now().getTime();
+      try {
+        const adapter = getBoardAdapter(source.adapter);
+        const result = await adapter.fetch(source);
+        const completedAt = now().toISOString();
+        const normalized = result.postings.map((raw) => normalizeRawPosting(raw, fetchedAt));
+        const kept: JobPosting[] = [];
+        let blocklistExcluded = 0;
 
-      return kept;
-    } catch (error) {
-      fetchErrors.push({
-        sourceId: source.id,
-        adapter: source.adapter,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      sourceStats.push({
-        sourceId: source.id,
-        adapter: source.adapter,
-        fetched: 0,
-        normalized: 0,
-        quarantined: 0,
-        matched: 0,
-        failed: true,
-      });
-      return [] as JobPosting[];
+        for (const posting of normalized) {
+          if (isBlocklisted(posting.company, blocklist)) {
+            blocklistExcluded += 1;
+            continue;
+          }
+          kept.push(posting);
+        }
+
+        return {
+          sourceIndex,
+          postings: kept,
+          blocklistExcluded,
+          pollStateUpdate: {
+            sourceId: source.id,
+            outcome: "success",
+            attemptedAt,
+            completedAt,
+          },
+          stat: {
+            sourceId: source.id,
+            adapter: source.adapter,
+            status: "success",
+            fetched: result.postings.length,
+            normalized: normalized.length,
+            quarantined: result.quarantined,
+            matched: 0,
+            durationMs: now().getTime() - startedAt,
+            attemptedAt,
+            completedAt,
+            failed: false,
+          },
+        };
+      } catch (error) {
+        const completedAt = now().toISOString();
+        return {
+          sourceIndex,
+          postings: [],
+          blocklistExcluded: 0,
+          pollStateUpdate: buildPollFailureUpdate(
+            source.id,
+            attemptedAt,
+            completedAt,
+            error,
+          ),
+          fetchError: buildFetchError(source, error),
+          stat: {
+            sourceId: source.id,
+            adapter: source.adapter,
+            status: "failure",
+            fetched: 0,
+            normalized: 0,
+            quarantined: 0,
+            matched: 0,
+            durationMs: now().getTime() - startedAt,
+            attemptedAt,
+            completedAt,
+            failed: true,
+          },
+        };
+      }
+    },
+  );
+
+  const orderedResults = [...workerResults].sort((a, b) => a.sourceIndex - b.sourceIndex);
+  const allPostings: JobPosting[] = [];
+  const fetchErrors: SourceFetchError[] = [];
+  const sourceStats: SourceStats[] = [];
+  const pollStateUpdates: SourcePollUpdate[] = [];
+  let blocklistExcluded = 0;
+
+  for (const result of orderedResults) {
+    allPostings.push(...result.postings);
+    sourceStats.push(result.stat);
+    blocklistExcluded += result.blocklistExcluded;
+    if (result.fetchError) {
+      fetchErrors.push(result.fetchError);
     }
-  });
-
-  for (const batch of results) {
-    allPostings.push(...batch);
+    if (result.pollStateUpdate) {
+      pollStateUpdates.push(result.pollStateUpdate);
+    }
   }
 
-  return { postings: allPostings, fetchErrors, sourceStats, blocklistExcluded };
+  const outcome = evaluateScanOutcome(sourceStats);
+
+  return {
+    postings: allPostings,
+    fetchErrors,
+    sourceStats,
+    blocklistExcluded,
+    pollStateUpdates,
+    hadSuccessfulSourceFetch: outcome.succeededSources > 0,
+    outcome,
+  };
 }
 
 export function partitionScanResults(
@@ -185,7 +377,16 @@ export function attachSourceMatchCounts(
   }));
 }
 
-export async function runScanPipeline(policy: ScanPolicy): Promise<{
+export interface RunScanPipelineOptions {
+  forcePoll?: boolean;
+  pollState?: SourcePollState;
+  now?: () => Date;
+}
+
+export async function runScanPipeline(
+  policy: ScanPolicy,
+  options: RunScanPipelineOptions = {},
+): Promise<{
   fetchedAt: string;
   allRaw: JobPosting[];
   matched: JobPosting[];
@@ -193,11 +394,27 @@ export async function runScanPipeline(policy: ScanPolicy): Promise<{
   fetchErrors: SourceFetchError[];
   sourceStats: SourceStats[];
   blocklistExcluded: number;
+  pollStateUpdates: SourcePollUpdate[];
+  hadSuccessfulSourceFetch: boolean;
+  outcome: ScanRunOutcome;
 }> {
-  const fetchedAt = new Date().toISOString();
+  const fetchedAt = (options.now ?? (() => new Date()))().toISOString();
   loadJobSourcesConfig();
-  const { postings, fetchErrors, sourceStats, blocklistExcluded } =
-    await fetchAllBoardPostings(policy, undefined, fetchedAt);
+  const {
+    postings,
+    fetchErrors,
+    sourceStats,
+    blocklistExcluded,
+    pollStateUpdates,
+    hadSuccessfulSourceFetch,
+    outcome,
+  } = await fetchAllBoardPostings({
+    policy,
+    fetchedAt,
+    forcePoll: options.forcePoll,
+    pollState: options.pollState,
+    now: options.now,
+  });
   const { matched, excluded } = filterPostings(postings, policy);
 
   return {
@@ -208,5 +425,16 @@ export async function runScanPipeline(policy: ScanPolicy): Promise<{
     fetchErrors,
     sourceStats: attachSourceMatchCounts(sourceStats, matched),
     blocklistExcluded,
+    pollStateUpdates,
+    hadSuccessfulSourceFetch,
+    outcome,
   };
+}
+
+export function computeNextSourcePollState(
+  current: SourcePollState,
+  profile: RoleProfile,
+  updates: SourcePollUpdate[],
+): SourcePollState {
+  return applySourcePollUpdates(current, profile, updates);
 }

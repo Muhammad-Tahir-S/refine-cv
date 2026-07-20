@@ -106,11 +106,18 @@ function sourceStatsTable(result: ScanRunResult): string {
   }
 
   const header =
-    "| Source | Fetched | Quarantined | Matched | Status |\n|--------|--------:|------------:|--------:|--------|\n";
+    "| Source | Fetched | Quarantined | Matched | Duration (ms) | Status |\n|--------|--------:|------------:|--------:|--------------:|--------|\n";
   const rows = result.sourceStats
     .map((stat) => {
-      const status = stat.failed ? "Error" : "OK";
-      return `| ${stat.sourceId} (${stat.adapter}) | ${stat.fetched} | ${stat.quarantined} | ${stat.matched} | ${status} |`;
+      let status: string;
+      if (stat.status === "skipped") {
+        status = `Skipped (${stat.skipReason ?? "cadence"})`;
+      } else if (stat.status === "failure") {
+        status = "Error";
+      } else {
+        status = "OK";
+      }
+      return `| ${stat.sourceId} (${stat.adapter}) | ${stat.fetched} | ${stat.quarantined} | ${stat.matched} | ${stat.durationMs} | ${status} |`;
     })
     .join("\n");
   return `${header}${rows}\n`;
@@ -186,8 +193,9 @@ export function renderScanReport(result: ScanRunResult): string {
           .map((e) => `- ${e.posting.company} — ${e.posting.title}: ${e.reason}`)
           .join("\n");
 
-  const newSummary =
-    result.newJobs.length === 0
+  const newSummary = result.outcome.allSkippedDueToCadence
+    ? "_All enabled boards were skipped due to minPollHours cadence — no fresh listing set was fetched this run._"
+    : result.newJobs.length === 0
       ? "_No new listings this run — all matches below were seen in a prior scan._"
       : `**${result.newJobs.length}** new listing(s) this run.`;
 
@@ -214,7 +222,7 @@ ${policyJsonBlock(result)}
 
 ## Method
 
-1. Fetch enabled public job boards from \`config/job-sources.json\` (no login required).
+1. Fetch enabled public job boards from \`config/job-sources.json\` (no login required). Sources respect \`minPollHours\` cadence unless \`pnpm scan-jobs --force\` is used.
 2. Normalize listings, apply employer blocklist from \`${policy.configLabel}\`.
 3. Filter for ${filterLabel} using the policy above.
 4. Dedupe against profile-specific \`~/.config/refine-cv/scan-state.json\` entries and lifecycle state (\`applied\`, \`dismissed\`, \`expired\`) from prior report checkboxes.

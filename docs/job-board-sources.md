@@ -35,4 +35,8 @@ These boards were evaluated but not integrated because terms forbid automation, 
 
 ## Polling guidance
 
-Do not poll faster than each source’s documented guidance. The scan runs all enabled boards with bounded concurrency and continues if one source fails.
+Do not poll faster than each source's documented guidance. `config/job-sources.json` sets `minPollHours` per board; the scan enforces cadence independently per role profile using `~/.config/refine-cv/source-poll-state.json`. Cadence anchors on the latest valid attempt, success, or failure timestamp, so a slow request or retry sequence cannot shorten the interval. Use `pnpm scan-jobs --force` only when intentionally bypassing cadence (e.g. debugging). HTTP fetches use bounded timeouts, retries (408/429/5xx and transient network errors only), exponential backoff with jitter, and `Retry-After` honoring up to a cap.
+
+When every enabled source is cadence-skipped, the report states that no fresh listing set was produced — it does not imply boards returned zero jobs. A run exits non-zero only when every **attempted** source fails (total source outage).
+
+The scan runs enabled boards with bounded concurrency and continues if one source fails.

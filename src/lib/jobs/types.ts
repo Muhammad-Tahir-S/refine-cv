@@ -145,20 +145,40 @@ export interface LinkedInDiscoveryState {
   lastRunAt: string | null;
 }
 
+export type SourceFetchStatus = "success" | "failure" | "skipped";
+
 export interface SourceFetchError {
   sourceId: string;
   adapter: string;
   error: string;
+  status?: number;
+  attempts?: number;
+  retryable?: boolean;
 }
 
 export interface SourceStats {
   sourceId: string;
   adapter: string;
+  status: SourceFetchStatus;
+  skipReason?: string;
   fetched: number;
   normalized: number;
   quarantined: number;
   matched: number;
+  durationMs: number;
+  attemptedAt?: string;
+  completedAt?: string;
+  /** @deprecated Use status === "failure" */
   failed: boolean;
+}
+
+export interface ScanRunOutcome {
+  attemptedSources: number;
+  skippedSources: number;
+  succeededSources: number;
+  failedSources: number;
+  allSkippedDueToCadence: boolean;
+  totalSourceOutage: boolean;
 }
 
 
@@ -176,4 +196,7 @@ export interface ScanRunResult {
   blocklistExcluded: number;
   fetchErrors: SourceFetchError[];
   sourceStats: SourceStats[];
+  outcome: ScanRunOutcome;
+  /** False when every enabled source was cadence-skipped — no fresh board listings were fetched. */
+  hadSuccessfulSourceFetch: boolean;
 }

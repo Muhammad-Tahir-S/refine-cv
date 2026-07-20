@@ -338,6 +338,15 @@ describe("report policy agreement", () => {
       blocklistExcluded: 0,
       fetchErrors: [],
       sourceStats: [],
+      outcome: {
+        attemptedSources: 0,
+        skippedSources: 0,
+        succeededSources: 0,
+        failedSources: 0,
+        allSkippedDueToCadence: false,
+        totalSourceOutage: false,
+      },
+      hadSuccessfulSourceFetch: true,
     };
 
     const markdown = renderScanReport(result);

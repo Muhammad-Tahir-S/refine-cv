@@ -15,6 +15,7 @@ description: >-
 - Geo / role / blocklist: `config/job-search.json` (default React/frontend)
 - Backend scan config: `config/job-search-nodejs-backend.json`
 - Scan state (auto-created): `~/.config/refine-cv/scan-state.json` — v3 profile-aware seen maps (`reactFrontend`, `nodejsBackend`)
+- Source poll cadence (auto-created): `~/.config/refine-cv/source-poll-state.json` — v2 profile-aware per-source attempt / success / failure timestamps
 - Job lifecycle (auto-synced from report checkboxes): `~/.config/refine-cv/applied-jobs.json` — v2 schema with `applied`, `dismissed`, `expired` maps
 - Criteria: React/frontend remote roles for a Nigerian applicant (`config/job-search.json`); Nigeria-eligible vs verify-geo vs likely-excluded geo tiers
 
@@ -24,13 +25,14 @@ description: >-
 
 ```bash
 pnpm scan-jobs
+pnpm scan-jobs --force
 pnpm scan-jobs --config config/job-search-nodejs-backend.json
 pnpm scan-jobs --config config/job-search.json --profile nodejsBackend
 ```
 
 This:
 
-1. Fetches all enabled boards in `config/job-sources.json` via public JSON/RSS APIs (no login)
+1. Fetches enabled boards in `config/job-sources.json` via public JSON/RSS APIs (no login). Each source's `minPollHours` cadence is enforced from `~/.config/refine-cv/source-poll-state.json` unless `--force` is passed.
 2. Applies employer blocklist from `config/job-search.json`
 3. Filters for React/frontend + Nigeria-focused geo eligibility (`src/lib/jobs/geo.ts`)
 4. Merges applied checkboxes from prior `jobs/*-job-scan/report.md` files
@@ -46,7 +48,7 @@ Present:
 
 - Count of new vs previously seen vs excluded
 - Nigeria-eligible and verify-geo tables from the report (prioritize Nigeria-eligible)
-- Per-source fetch stats and errors
+- Per-source fetch stats (success / skipped / error), duration, and errors
 - Path to the report and applied checklist
 
 ### 3. Optional — LinkedIn discovery (low volume)
