@@ -4,6 +4,10 @@ import {
   partitionScanResults,
   runScanPipeline,
 } from "./pipeline.js";
+import {
+  computeEffectivenessMetrics,
+  rankMatchedJobs,
+} from "./scoring.js";
 import { SCAN_ARTIFACT_NAMES } from "./artifact-names.js";
 import {
   boardDisplayName,
@@ -184,6 +188,23 @@ export async function runJobScan(
       policy.roleProfile,
     );
 
+    const referenceDate = clock.now();
+    const rankedMatched = rankMatchedJobs(
+      activeMatched,
+      policy.roleProfile,
+      referenceDate,
+    );
+    const effectiveness = computeEffectivenessMetrics({
+      policyMatched: pipeline.matched,
+      newJobs,
+      previouslySeen,
+      lifecycleSuppressed,
+      lifecycleState,
+      sourceStats: pipeline.sourceStats,
+      roleProfile: policy.roleProfile,
+      referenceDate,
+    });
+
     const completedAt = clock.now().toISOString();
     const durationMs = Math.max(0, Date.parse(completedAt) - Date.parse(startedAt));
     const nextPollState = computeNextSourcePollState(
@@ -226,9 +247,11 @@ export async function runJobScan(
       policy: serializedPolicy,
       policyMatched,
       allMatched: activeMatched,
+      rankedMatched,
       newJobs,
       previouslySeen,
       lifecycleSuppressed,
+      effectiveness,
       excluded: pipeline.excluded,
       exclusionsByReason,
       blocklistExcluded: pipeline.blocklistExcluded,

@@ -173,7 +173,7 @@ describe("report", () => {
     });
 
     const markdown = renderScanReport(result);
-    expect(markdown).toContain("All matched — Nigeria-eligible");
+    expect(markdown).toContain("Ranked for action — Nigeria-eligible");
     expect(markdown).toContain("Senior Frontend Engineer");
     expect(markdown).toContain("| Seen |");
     expect(markdown).toContain("this Markdown file");

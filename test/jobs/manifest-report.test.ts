@@ -193,7 +193,7 @@ describe("run manifest", () => {
       },
     });
 
-    expect(manifest.schemaVersion).toBe(1);
+    expect(manifest.schemaVersion).toBe(2);
     expect(manifest.durationMs).toBe(5000);
     expect(manifest.pipeline.policyMatched).toBe(2);
     expect(manifest.pipeline.activeMatched).toBe(1);
@@ -378,6 +378,7 @@ describe("report wording and attribution", () => {
     );
 
     expect(markdown).toContain("Source attribution");
+    expect(markdown).toContain("Source yield");
     expect(markdown).toContain("Jobs via Remotive");
     expect(markdown).toContain("Policy matched (after filters) | 3");
     expect(markdown).toContain("Active matched (lifecycle-adjusted) | 0");

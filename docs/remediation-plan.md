@@ -25,7 +25,7 @@ next phase begins.
 - [x] Phase 8: improve reports and observability
 - [x] Phase 9: repair GitHub evidence semantics
 - [x] Phase 10: harden CV rendering
-- [ ] Phase 11: add effectiveness improvements
+- [x] Phase 11: add effectiveness improvements
 - [ ] Phase 12: complete quality, privacy, and operational gates
 
 ## Phase gates

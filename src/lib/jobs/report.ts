@@ -10,7 +10,7 @@ import {
   formatMarkdownLink,
   sanitizeHttpUrl,
 } from "./markdown-safe.js";
-import type { GeoEligibility, JobPosting, ScanRunResult, SourceStats } from "./types.js";
+import type { GeoEligibility, JobPosting, RankedJob, ScanRunResult, SourceStats } from "./types.js";
 import { geoEligibilityLabel } from "./geo.js";
 import type { SerializedScanPolicy } from "./scan-policy.js";
 
@@ -55,6 +55,58 @@ function formatGeoEligibility(eligibility: GeoEligibility | undefined): string {
     return "Unknown";
   }
   return geoEligibilityLabel(eligibility);
+}
+
+function formatPercent(value: number | null): string {
+  if (value === null) {
+    return "—";
+  }
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatDecimal(value: number): string {
+  return value.toFixed(2);
+}
+
+function rankedJobTableRows(
+  ranked: RankedJob[],
+  options: { status?: Map<string, "New" | "Seen"> } = {},
+): string {
+  if (ranked.length === 0) {
+    return "_No listings in this section._\n";
+  }
+
+  const showStatus = options.status && options.status.size > 0;
+  const header = showStatus
+    ? "| Status | Company | Role | Score | Fresh | Geo conf | Source | Apply |\n|--------|--------|------|-------|-------|----------|--------|-------|\n"
+    : "| Company | Role | Score | Fresh | Geo conf | Source | Apply |\n|--------|------|-------|-------|----------|--------|-------|\n";
+
+  const rows = ranked
+    .map(({ posting: job, score }) => {
+      const applyCell = (() => {
+        const safeUrl = sanitizeHttpUrl(job.url);
+        return safeUrl ? formatMarkdownLink("Apply", safeUrl) : escapeMarkdownTableCell(job.url);
+      })();
+      const freshCell = score.likelyExpired
+        ? `${formatDecimal(score.freshness)} ⚠`
+        : formatDecimal(score.freshness);
+      const cells = [
+        `**${escapeMarkdownTableCell(job.company)}**`,
+        escapeMarkdownTableCell(job.title),
+        formatDecimal(score.total),
+        freshCell,
+        formatDecimal(score.geoConfidence),
+        escapeMarkdownTableCell(formatConfiguredSources(job)),
+        applyCell,
+      ];
+      if (showStatus) {
+        const status = options.status?.get(job.dedupeKey) ?? "Seen";
+        cells.unshift(status);
+      }
+      return `| ${cells.join(" | ")} |`;
+    })
+    .join("\n");
+  return `${header}${rows}\n`;
 }
 
 function jobTableRows(
@@ -338,6 +390,33 @@ function dedupeSection(result: ScanRunResult): string {
   ].join("\n");
 }
 
+function sourceYieldSection(result: ScanRunResult): string {
+  const rows = result.effectiveness.sourceYield;
+  if (rows.length === 0) {
+    return "_No sources configured._\n";
+  }
+
+  const header =
+    "| Source | Fetched | Matched | Yield | New | Seen | Suppressed | Likely expired |\n" +
+    "|--------|--------:|--------:|------:|----:|-----:|-----------:|---------------:|\n";
+
+  const body = rows
+    .map((row) => {
+      const suppressedTotal =
+        row.suppressed.applied + row.suppressed.dismissed + row.suppressed.expired;
+      return `| ${escapeMarkdownTableCell(row.sourceId)} | ${row.fetched} | ${row.matched} | ${formatPercent(row.yieldRate)} | ${row.new} | ${row.previouslySeen} | ${suppressedTotal} | ${row.likelyExpiredAmongMatched} |`;
+    })
+    .join("\n");
+
+  const falsePositive = result.effectiveness.falsePositiveProxy;
+  const footer =
+    falsePositive === null
+      ? ""
+      : `\n\nDismissal proxy (dismissed ÷ policy matched): **${formatPercent(falsePositive)}** — fraction of policy matches marked dismissed in lifecycle state.\n`;
+
+  return `${header}${body}\n${footer}`;
+}
+
 function countLines(result: ScanRunResult): string {
   const lifecycleTotal =
     result.lifecycleSuppressed.applied +
@@ -352,6 +431,7 @@ function countLines(result: ScanRunResult): string {
     `| Lifecycle suppressed (applied/dismissed/expired) | ${lifecycleTotal} |`,
     `| New this run | **${result.newJobs.length}** |`,
     `| Previously seen (still open) | ${result.previouslySeen.length} |`,
+    `| Likely expired (score flag) | ${result.effectiveness.likelyExpiredAmongMatched} |`,
     `| Excluded by filter | ${result.excluded.length} |`,
     `| Source fetch errors | ${result.fetchErrors.length} |`,
   ].join("\n");
@@ -377,14 +457,16 @@ export function renderScanReport(result: ScanRunResult): string {
   const configLabel = formatMarkdownCode(policy.configLabel);
   const filterLabel = `${policy.roleProfileLabel} + geo eligibility`;
   const statusByKey = buildStatusMap(result);
+  const rankedNigeriaEligible = result.rankedMatched.filter(
+    ({ posting }) => posting.geoEligibility === "nigeria_eligible",
+  );
+  const rankedVerifyGeo = result.rankedMatched.filter(
+    ({ posting }) => posting.geoEligibility === "verify_geo",
+  );
   const newNigeriaEligible = result.newJobs.filter(
     (job) => job.geoEligibility === "nigeria_eligible",
   );
   const newVerifyGeo = result.newJobs.filter((job) => job.geoEligibility === "verify_geo");
-  const allNigeriaEligible = result.allMatched.filter(
-    (job) => job.geoEligibility === "nigeria_eligible",
-  );
-  const allVerifyGeo = result.allMatched.filter((job) => job.geoEligibility === "verify_geo");
   const outcomeSummary = formatOutcomeSummary(result);
   const newSummary = formatNewSummary(result);
   const artifactLinks = [
@@ -443,22 +525,31 @@ ${policyJsonBlock(result)}
 1. Fetch enabled public job boards from ${formatMarkdownCode("config/job-sources.json")} (no login required). Sources respect ${formatMarkdownCode("minPollHours")} cadence unless ${formatMarkdownCode("pnpm scan-jobs --force")} is used${result.forcePoll ? " (**--force** was used this run)" : ""}.
 2. Normalize listings, deduplicate overlapping identities across configured sources, apply employer blocklist from ${configLabel}.
 3. Filter for ${filterLabel} using the policy above.
-4. Dedupe against profile-specific scan state and lifecycle state (\`applied\`, \`dismissed\`, \`expired\`) from prior report checkboxes.
-5. LinkedIn discovery remains optional (${formatMarkdownCode("pnpm discover-linkedin")}) and separate from this scan.
+4. Score and rank active matches by relevance, geo confidence, and freshness (ranking does not change eligibility).
+5. Dedupe against profile-specific scan state and lifecycle state (\`applied\`, \`dismissed\`, \`expired\`) from prior report checkboxes.
+6. LinkedIn discovery remains optional (${formatMarkdownCode("pnpm discover-linkedin")}) and separate from this scan.
 
 ---
 
-## All matched — Nigeria-eligible
+## Ranked for action — Nigeria-eligible
 
-Prioritize these. **Status:** New = first time seen; Seen = still open from a prior scan. Counts are **active matched** (lifecycle-suppressed jobs are excluded).
+Prioritize these. Sorted by composite score within this geo tier. **Status:** New = first time seen; Seen = still open from a prior scan. Score columns use 0–1 scale (2 decimal places). ⚠ = likely expired listing (>75 days).
 
-${jobTableRows(allNigeriaEligible, { status: statusByKey })}
+${rankedJobTableRows(rankedNigeriaEligible, { status: statusByKey })}
 
-## All matched — verify geo
+## Ranked for action — verify geo
 
 Roles with EMEA or unclear remote scope without explicit Nigeria/Africa hire language. Confirm eligibility on the listing before applying.
 
-${jobTableRows(allVerifyGeo, { status: statusByKey })}
+${rankedJobTableRows(rankedVerifyGeo, { status: statusByKey })}
+
+---
+
+## Source yield
+
+Per-source effectiveness for this run (matched counts are policy-filtered listings attributed to each configured source).
+
+${sourceYieldSection(result)}
 
 ${
   result.newJobs.length > 0

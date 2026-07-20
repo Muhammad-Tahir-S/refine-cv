@@ -13,13 +13,15 @@ import type {
   JobSourceId,
   LifecycleSuppressedCounts,
   QuarantineDiagnostics,
+  ScanEffectivenessMetrics,
   ScanRunOutcome,
   ScanRunResult,
   SourceFetchError,
   SourceStats,
+  SourceYieldStats,
 } from "./types.js";
 
-export const RUN_MANIFEST_SCHEMA_VERSION = 1 as const;
+export const RUN_MANIFEST_SCHEMA_VERSION = 2 as const;
 
 export type RunOutcomeStatus =
   | "success"
@@ -84,6 +86,7 @@ export interface RunManifest {
     activeMatched: number;
     newJobs: number;
     previouslySeen: number;
+    effectiveness: ScanEffectivenessMetrics;
   };
   outcome: {
     status: RunOutcomeStatus;
@@ -158,6 +161,27 @@ const RunManifestSourceSchema = z.object({
     retryable: z.boolean().optional(),
   }).strict().optional(),
 }).strict();
+const LifecycleSuppressedCountsSchema = z.object({
+  applied: CountSchema,
+  dismissed: CountSchema,
+  expired: CountSchema,
+}).strict();
+const SourceYieldStatsSchema = z.object({
+  sourceId: z.string().min(1),
+  fetched: CountSchema,
+  matched: CountSchema,
+  new: CountSchema,
+  previouslySeen: CountSchema,
+  suppressed: LifecycleSuppressedCountsSchema,
+  yieldRate: z.number().min(0).max(1).nullable(),
+  likelyExpiredAmongMatched: CountSchema,
+}).strict();
+const ScanEffectivenessMetricsSchema = z.object({
+  sourceYield: z.array(SourceYieldStatsSchema),
+  falsePositiveProxy: z.number().min(0).max(1).nullable(),
+  likelyExpiredAmongMatched: CountSchema,
+  lifecycleSuppressed: LifecycleSuppressedCountsSchema,
+}).strict();
 
 export const RunManifestSchema = z.object({
   schemaVersion: z.literal(RUN_MANIFEST_SCHEMA_VERSION),
@@ -203,15 +227,12 @@ export const RunManifestSchema = z.object({
       mergedCount: CountSchema,
     }).strict(),
     exclusionsByReason: z.record(z.string(), CountSchema),
-    lifecycleSuppressed: z.object({
-      applied: CountSchema,
-      dismissed: CountSchema,
-      expired: CountSchema,
-    }).strict(),
+    lifecycleSuppressed: LifecycleSuppressedCountsSchema,
     policyMatched: CountSchema,
     activeMatched: CountSchema,
     newJobs: CountSchema,
     previouslySeen: CountSchema,
+    effectiveness: ScanEffectivenessMetricsSchema,
   }).strict(),
   outcome: z.object({
     status: z.enum(["success", "partial", "total_outage", "all_cadence_skipped"]),
@@ -485,6 +506,7 @@ export function buildRunManifest(input: BuildRunManifestInput): RunManifest {
       activeMatched: result.allMatched.length,
       newJobs: result.newJobs.length,
       previouslySeen: result.previouslySeen.length,
+      effectiveness: result.effectiveness,
     },
     outcome: {
       status: deriveRunOutcomeStatus(result.outcome),

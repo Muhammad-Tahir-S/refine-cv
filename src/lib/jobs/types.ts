@@ -229,6 +229,38 @@ export interface ScanRunOutcome {
   totalSourceOutage: boolean;
 }
 
+export interface JobScoreBreakdown {
+  relevance: number;
+  geoConfidence: number;
+  freshness: number;
+  total: number;
+  reasons: string[];
+  likelyExpired?: boolean;
+}
+
+export interface RankedJob {
+  posting: JobPosting;
+  score: JobScoreBreakdown;
+}
+
+export interface SourceYieldStats {
+  sourceId: string;
+  fetched: number;
+  matched: number;
+  new: number;
+  previouslySeen: number;
+  suppressed: LifecycleSuppressedCounts;
+  yieldRate: number | null;
+  likelyExpiredAmongMatched: number;
+}
+
+export interface ScanEffectivenessMetrics {
+  sourceYield: SourceYieldStats[];
+  falsePositiveProxy: number | null;
+  likelyExpiredAmongMatched: number;
+  lifecycleSuppressed: LifecycleSuppressedCounts;
+}
+
 export interface SourceCatalogEntry {
   configuredSourceId: string;
   adapter: JobSourceId;
@@ -252,9 +284,12 @@ export interface ScanRunResult {
   policyMatched: number;
   /** Active matches only — excludes applied, dismissed, and expired jobs */
   allMatched: JobPosting[];
+  /** Active matches ranked for display (post-filter; does not change eligibility). */
+  rankedMatched: RankedJob[];
   newJobs: JobPosting[];
   previouslySeen: JobPosting[];
   lifecycleSuppressed: LifecycleSuppressedCounts;
+  effectiveness: ScanEffectivenessMetrics;
   excluded: Array<{ posting: JobPosting; reason: string }>;
   exclusionsByReason: Record<string, number>;
   blocklistExcluded: number;
