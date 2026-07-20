@@ -7,8 +7,8 @@ export const ROOT = join(SRC_DIR, "..", "..");
 export const paths = {
   root: ROOT,
   config: join(ROOT, "config", "github-repos.json"),
-  companiesConfig: join(ROOT, "config", "companies.json"),
   jobSearchConfig: join(ROOT, "config", "job-search.json"),
+  jobSourcesConfig: join(ROOT, "config", "job-sources.json"),
   jobsDir: join(ROOT, "jobs"),
   profile: join(ROOT, "profile"),
   baseCvPdf: join(ROOT, "profile", "base-cv.pdf"),

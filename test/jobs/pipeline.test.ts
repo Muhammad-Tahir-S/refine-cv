@@ -1,0 +1,201 @@
+import { describe, expect, it } from "vitest";
+import { validateRemoteOkJob, remoteOkJobToPosting } from "../../src/lib/jobs/boards/remoteok.ts";
+import { parseHnHiringComment } from "../../src/lib/jobs/boards/hn-hiring.ts";
+import { parseWwrRss } from "../../src/lib/jobs/boards/wwr.ts";
+import {
+  canonicalizeUrl,
+  isBlocklisted,
+  isKnownInState,
+  makeDedupeKeyFromPosting,
+  makeLegacyDedupeKey,
+} from "../../src/lib/jobs/dedupe.ts";
+import { filterPostings } from "../../src/lib/jobs/filter.ts";
+import { decodeHtmlEntities, normalizeRawPosting } from "../../src/lib/jobs/normalize.ts";
+import { renderScanReport } from "../../src/lib/jobs/report.ts";
+import type { JobPosting, ScanRunResult } from "../../src/lib/jobs/types.ts";
+
+describe("dedupe", () => {
+  it("prefers canonical URL keys", () => {
+    const key = makeDedupeKeyFromPosting({
+      sourceId: "jobicy",
+      sourceJobId: "123",
+      company: "Acme",
+      title: "React Engineer",
+      url: "https://jobicy.com/jobs/123?utm=1",
+    });
+    expect(key).toBe("url::https://jobicy.com/jobs/123");
+  });
+
+  it("matches legacy keys in state", () => {
+    const posting = {
+      dedupeKey: "url::https://example.com/jobs/1",
+      legacyDedupeKey: makeLegacyDedupeKey("Acme", "React Engineer"),
+    };
+    expect(isKnownInState(posting, { [posting.legacyDedupeKey]: {} })).toBe(true);
+  });
+
+  it("canonicalizes URLs consistently", () => {
+    expect(canonicalizeUrl("https://Example.com/jobs/1/")).toBe("https://example.com/jobs/1");
+  });
+});
+
+describe("blocklist", () => {
+  it("blocks Metabase and Canonical", () => {
+    const blocklist = ["Metabase", "Canonical", "Micro1"];
+    expect(isBlocklisted("Metabase", blocklist)).toBe(true);
+    expect(isBlocklisted("Canonical", blocklist)).toBe(true);
+    expect(isBlocklisted("Hostaway", blocklist)).toBe(false);
+  });
+});
+
+describe("normalize", () => {
+  it("decodes HTML entities and strips tags", () => {
+    expect(decodeHtmlEntities("React &amp; Next.js")).toBe("React & Next.js");
+    const posting = normalizeRawPosting(
+      {
+        sourceId: "jobicy",
+        sourceJobId: "1",
+        company: "Acme",
+        title: "Frontend Engineer",
+        url: "https://example.com/apply",
+        location: "Worldwide",
+        description: "<p>React role</p>",
+      },
+      "2026-07-18T00:00:00.000Z",
+    );
+    expect(posting.description).toContain("React role");
+    expect(posting.legacyDedupeKey).toBe(makeLegacyDedupeKey("Acme", "Frontend Engineer"));
+  });
+});
+
+describe("remoteok validation", () => {
+  it("rejects city-like titles and spam descriptions", () => {
+    expect(
+      validateRemoteOkJob({
+        company: "Example Co",
+        position: "Adelaide",
+        description: "There are no articles in this category.",
+        location: "Adelaide",
+        url: "https://remoteok.com/remote-jobs/1",
+      }).ok,
+    ).toBe(false);
+  });
+
+  it("accepts plausible frontend roles", () => {
+    const validation = validateRemoteOkJob({
+      company: "Example Co",
+      position: "Senior React Frontend Engineer",
+      description:
+        "Build React apps for a remote team worldwide. Strong TypeScript and Next.js required.",
+      location: "Remote",
+      url: "https://remoteok.com/remote-jobs/2",
+      epoch: Math.floor(Date.now() / 1000),
+    });
+    expect(validation.ok).toBe(true);
+    const posting = remoteOkJobToPosting({
+      id: "2",
+      company: "Example Co",
+      position: "Senior React Frontend Engineer",
+      description: "Build React apps for a remote team worldwide.",
+      location: "Remote",
+      url: "https://remoteok.com/remote-jobs/2",
+    });
+    expect(posting.title).toContain("React");
+  });
+});
+
+describe("hn hiring parser", () => {
+  it("extracts frontend comments conservatively", () => {
+    const posting = parseHnHiringComment(
+      {
+        id: 123,
+        author: "startupco",
+        text: "StartupCo | Senior React Engineer | REMOTE | https://startupco.com/jobs/react",
+      },
+      "999",
+    );
+    expect(posting?.company).toBe("StartupCo");
+    expect(posting?.title).toContain("React");
+  });
+
+  it("skips non-frontend comments", () => {
+    const posting = parseHnHiringComment(
+      {
+        id: 124,
+        author: "startupco",
+        text: "We are hiring a sales manager in NYC.",
+      },
+      "999",
+    );
+    expect(posting).toBeNull();
+  });
+});
+
+describe("wwr rss parser", () => {
+  it("parses item blocks from RSS", () => {
+    const items = parseWwrRss(`<?xml version="1.0"?><rss><channel><item>
+      <title>Acme: Frontend Engineer</title>
+      <link>https://weworkremotely.com/remote-jobs/1</link>
+      <region>Anywhere in the World</region>
+      <description>&lt;p&gt;React role&lt;/p&gt;</description>
+    </item></channel></rss>`);
+    expect(items).toHaveLength(1);
+    expect(items[0].title).toContain("Frontend Engineer");
+  });
+});
+
+describe("report", () => {
+  it("includes all matched listings in markdown tables", () => {
+    const posting = normalizeRawPosting(
+      {
+        sourceId: "jobicy",
+        sourceJobId: "1",
+        company: "Acme",
+        title: "Senior Frontend Engineer",
+        url: "https://example.com/jobs/1",
+        location: "Worldwide",
+        description: "React, TypeScript, remote worldwide.",
+      },
+      "2026-07-18T00:00:00.000Z",
+    );
+    posting.geoEligibility = "nigeria_eligible";
+
+    const result: ScanRunResult = {
+      scanDate: "18 July 2026",
+      outputDir: "/tmp/job-scan",
+      allMatched: [posting],
+      newJobs: [],
+      previouslySeen: [posting],
+      excluded: [],
+      blocklistExcluded: 0,
+      fetchErrors: [],
+      sourceStats: [],
+    };
+
+    const markdown = renderScanReport(result);
+    expect(markdown).toContain("All matched — Nigeria-eligible");
+    expect(markdown).toContain("Senior Frontend Engineer");
+    expect(markdown).toContain("| Seen |");
+    expect(markdown).toContain("this Markdown file");
+  });
+});
+
+describe("filter", () => {
+  it("matches react frontend roles", () => {
+    const base: JobPosting = normalizeRawPosting(
+      {
+        sourceId: "remotive",
+        sourceJobId: "1",
+        company: "Acme",
+        title: "Senior Frontend Engineer",
+        url: "https://example.com/jobs/1",
+        location: "Worldwide",
+        description: "React, TypeScript, remote worldwide.",
+      },
+      "2026-07-18T00:00:00.000Z",
+    );
+
+    const { matched } = filterPostings([base]);
+    expect(matched.length).toBe(1);
+  });
+});

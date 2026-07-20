@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "attribution": "Listings sourced from public job boards. Each board requires link-back — see docs/job-board-sources.md.",
+  "sources": [
+    {
+      "id": "himalayas",
+      "adapter": "himalayas",
+      "enabled": true,
+      "query": "react frontend",
+      "worldwide": true,
+      "maxPages": 3,
+      "minPollHours": 24,
+      "attribution": "Jobs via Himalayas (https://himalayas.app/)"
+    },
+    {
+      "id": "jobicy",
+      "adapter": "jobicy",
+      "enabled": true,
+      "tag": "react",
+      "count": 100,
+      "minPollHours": 6,
+      "attribution": "Jobs via Jobicy (https://jobicy.com/)"
+    },
+    {
+      "id": "remotive",
+      "adapter": "remotive",
+      "enabled": true,
+      "search": "frontend",
+      "category": "software-dev",
+      "minPollHours": 6,
+      "attribution": "Jobs via Remotive (https://remotive.com/)"
+    },
+    {
+      "id": "arbeitnow",
+      "adapter": "arbeitnow",
+      "enabled": true,
+      "maxPages": 3,
+      "minPollHours": 24,
+      "attribution": "Jobs via Arbeitnow (https://www.arbeitnow.com/)"
+    },
+    {
+      "id": "remoteok",
+      "adapter": "remoteok",
+      "enabled": true,
+      "tags": "frontend,react,dev",
+      "minPollHours": 24,
+      "attribution": "Jobs via Remote OK (https://remoteok.com/)"
+    },
+    {
+      "id": "wwr",
+      "adapter": "wwr",
+      "enabled": true,
+      "feeds": ["programming", "front-end", "full-stack"],
+      "minPollHours": 6,
+      "attribution": "Jobs via We Work Remotely (https://weworkremotely.com/)"
+    },
+    {
+      "id": "hn-hiring",
+      "adapter": "hn-hiring",
+      "enabled": true,
+      "minPollHours": 168,
+      "attribution": "Jobs from Hacker News Who is Hiring threads (https://news.ycombinator.com/)"
+    }
+  ]
+}

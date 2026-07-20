@@ -14,5 +14,23 @@
   "roleFilters": {
     "reactFrontend": true,
     "levels": ["junior", "mid", "senior", "staff_lead", "unknown"]
-  }
+  },
+  "blocklist": [
+    "DataAnnotation",
+    "Wing Assistant",
+    "BairesDev",
+    "P2 Recruitment",
+    "Hire Feed",
+    "Crossing Hurdles",
+    "Jobgether",
+    "Digital Gurus",
+    "Penta Consulting",
+    "EPAM",
+    "Infosys",
+    "Virtusa",
+    "Mindrift",
+    "Metabase",
+    "Canonical",
+    "Micro1"
+  ]
 }

@@ -291,13 +291,14 @@ Paste current Toptal profile → /enhance-toptal-profile
 
 ### 6. Job scanning
 
-Find new React frontend remote roles from company ATS boards; optionally discover new companies via LinkedIn.
+Find new React frontend remote roles from public job boards; optionally run low-volume LinkedIn discovery.
 
 **Lifecycle**
 
 ```
 pnpm scan-jobs
-  → fetch boards in config/companies.json (Greenhouse, Lever, Ashby, Workable, custom HTML)
+  → fetch enabled boards in config/job-sources.json (Himalayas, Jobicy, Remotive, etc.)
+  → apply employer blocklist from config/job-search.json
   → filter: React/FE, remote scope, seniority
   → dedupe vs ~/.config/refine-cv/scan-state.json
   → sync applied checkboxes from prior reports
@@ -306,8 +307,7 @@ pnpm scan-jobs
 Optional discovery:
   pnpm linkedin:login        (once — manual sign-in in Chrome)
   pnpm discover-linkedin     (max 3 pages/day, external-apply URLs)
-  → jobs/…/discovered-companies.md
-  → user approves additions to config/companies.json
+  → jobs/…/linkedin-discovery.md
 
 After applying:
   tick - [x] in report checklist → next scan auto-syncs
@@ -324,15 +324,17 @@ After applying:
 
 | Script | Purpose |
 |--------|---------|
-| `pnpm scan-jobs` | ATS scan → report + raw JSON |
+| `pnpm scan-jobs` | Board scan → report + raw JSON |
+| `pnpm test` | Job scan unit tests (Vitest) |
 | `pnpm mark-applied` | Sync applied checkboxes to state file |
 | `pnpm linkedin:login` | Save LinkedIn session (Chrome via Playwright) |
-| `pnpm discover-linkedin` | Low-volume company discovery |
+| `pnpm discover-linkedin` | Low-volume LinkedIn external-apply discovery |
 | `pnpm setup:linkedin` | Install Playwright Chrome |
 
 **Config**
 
-- `config/companies.json` — employer registry, ATS slugs, blocklist
+- `config/job-sources.json` — enabled public job boards
+- `config/job-search.json` — geo criteria, role filters, employer blocklist
 
 **State** (auto-created, outside repo)
 
@@ -455,7 +457,10 @@ For Toptal: replace steps 2–4 with `/toptal-pitch` (+ optional `/avoid-ai-writ
 | `profile/questionnaire.md` | Metrics, red lines, writing voice |
 | `profile/github-summary.md` | Indexed evidence summary |
 | `config/github-repos.json` | Repos to index |
-| `config/companies.json` | Job scan employer registry |
+| `config/job-sources.json` | Job scan board registry |
+| `config/job-search.json` | Geo criteria and employer blocklist |
+| `docs/job-board-sources.md` | Public board cadence and attribution |
+| `docs/session-job-boards-backlog.md` | Future session-required boards |
 | `sources/cv-best-practices.md` | CV/ATS rules |
 | `sources/toptal-best-practices.md` | Toptal rules |
 | `sources/writing-style.md` | Anti-AI rules (draft time) |

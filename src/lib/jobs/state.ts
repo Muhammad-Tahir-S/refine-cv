@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { z } from "zod";
-import { makeDedupeKey } from "./dedupe.js";
+import { makeLegacyDedupeKey } from "./dedupe.js";
 import type { AppliedJob, AppliedJobsState, ScanState, ScanStateEntry } from "./types.js";
 
 export const REFINE_CV_CONFIG_DIR = join(homedir(), ".config", "refine-cv");
@@ -48,17 +48,18 @@ function ensureConfigDir(): void {
   }
 }
 
-export function loadScanState(): ScanState {
+export function loadScanState(statePath: string = SCAN_STATE_PATH): ScanState {
   ensureConfigDir();
-  if (!existsSync(SCAN_STATE_PATH)) {
-    return { version: 1, seen: {} };
+  if (!existsSync(statePath)) {
+    return { version: 2, seen: {} };
   }
-  return ScanStateSchema.parse(JSON.parse(readFileSync(SCAN_STATE_PATH, "utf8")));
+  return ScanStateSchema.parse(JSON.parse(readFileSync(statePath, "utf8")));
 }
 
-export function saveScanState(state: ScanState): void {
+export function saveScanState(state: ScanState, statePath: string = SCAN_STATE_PATH): void {
   ensureConfigDir();
-  writeFileSync(SCAN_STATE_PATH, `${JSON.stringify(state, null, 2)}\n`);
+  mkdirSync(dirname(statePath), { recursive: true });
+  writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`);
 }
 
 export function loadAppliedJobs(): AppliedJobsState {
@@ -90,7 +91,7 @@ export function updateScanState(
       : { ...entry, firstSeenAt: now, lastSeenAt: now };
   }
 
-  return { version: 1, seen };
+  return { version: 2, seen };
 }
 
 export function parseAppliedCheckboxesFromReport(content: string, reportPath: string): AppliedJob[] {
@@ -102,7 +103,7 @@ export function parseAppliedCheckboxesFromReport(content: string, reportPath: st
     const company = match[2].trim();
     const title = match[3].trim();
     const url = match[4].trim();
-    const dedupeKey = makeDedupeKey(company, title);
+    const dedupeKey = makeLegacyDedupeKey(company, title);
     applied.push({
       dedupeKey,
       company,

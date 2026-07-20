@@ -1,5 +1,5 @@
 import type { GeoEligibility, JobPosting, ScanRunResult } from "./types.js";
-import { geoEligibilityLabel, loadJobSearchConfig } from "./geo.js";
+import { geoEligibilityLabel, loadJobSearchConfig, resolveRoleProfile } from "./geo.js";
 
 function escapeCell(value: string): string {
   return value.replace(/\|/g, "\\|").replace(/\n/g, " ");
@@ -40,20 +40,49 @@ function formatGeoEligibility(eligibility: GeoEligibility | undefined): string {
   return geoEligibilityLabel(eligibility);
 }
 
-function jobTableRows(jobs: JobPosting[]): string {
+function jobTableRows(
+  jobs: JobPosting[],
+  options: { status?: Map<string, "New" | "Seen"> } = {},
+): string {
   if (jobs.length === 0) {
     return "_No listings in this section._\n";
   }
 
-  const header =
-    "| Company | Role | Level | Remote | Geo | Apply |\n|--------|------|-------|--------|-----|-------|\n";
+  const showStatus = options.status && options.status.size > 0;
+  const header = showStatus
+    ? "| Status | Company | Role | Level | Remote | Geo | Source | Apply |\n|--------|--------|------|-------|--------|-----|--------|-------|\n"
+    : "| Company | Role | Level | Remote | Geo | Source | Apply |\n|--------|------|-------|--------|-----|--------|-------|\n";
+
   const rows = jobs
-    .map(
-      (job) =>
-        `| **${escapeCell(job.company)}** | ${escapeCell(job.title)} | ${formatLevel(job.level)} | ${formatRemoteScope(job.remoteScope)} | ${formatGeoEligibility(job.geoEligibility)} | ${job.url} |`,
-    )
+    .map((job) => {
+      const cells = [
+        `**${escapeCell(job.company)}**`,
+        escapeCell(job.title),
+        formatLevel(job.level),
+        formatRemoteScope(job.remoteScope),
+        formatGeoEligibility(job.geoEligibility),
+        job.source,
+        job.url,
+      ];
+      if (showStatus) {
+        const status = options.status?.get(job.dedupeKey) ?? "Seen";
+        cells.unshift(status);
+      }
+      return `| ${cells.join(" | ")} |`;
+    })
     .join("\n");
   return `${header}${rows}\n`;
+}
+
+function buildStatusMap(result: ScanRunResult): Map<string, "New" | "Seen"> {
+  const status = new Map<string, "New" | "Seen">();
+  for (const job of result.newJobs) {
+    status.set(job.dedupeKey, "New");
+  }
+  for (const job of result.previouslySeen) {
+    status.set(job.dedupeKey, "Seen");
+  }
+  return status;
 }
 
 function appliedChecklist(jobs: JobPosting[]): string {
@@ -70,12 +99,45 @@ function countByGeo(jobs: JobPosting[], eligibility: GeoEligibility): number {
   return jobs.filter((job) => job.geoEligibility === eligibility).length;
 }
 
-export function renderScanReport(result: ScanRunResult): string {
+function sourceStatsTable(result: ScanRunResult): string {
+  if (result.sourceStats.length === 0) {
+    return "_No sources configured._\n";
+  }
+
+  const header =
+    "| Source | Fetched | Quarantined | Matched | Status |\n|--------|--------:|------------:|--------:|--------|\n";
+  const rows = result.sourceStats
+    .map((stat) => {
+      const status = stat.failed ? "Error" : "OK";
+      return `| ${stat.sourceId} (${stat.adapter}) | ${stat.fetched} | ${stat.quarantined} | ${stat.matched} | ${status} |`;
+    })
+    .join("\n");
+  return `${header}${rows}\n`;
+}
+
+export function renderScanReport(result: ScanRunResult, options: { isolated?: boolean } = {}): string {
   const config = loadJobSearchConfig();
-  const nigeriaEligibleJobs = result.newJobs.filter(
+  const profile = resolveRoleProfile(config);
+  const roleCriteria =
+    profile === "nodejsBackend"
+      ? "- Node.js / backend focus (NestJS, Express, API/server-side)\n- Junior → mid level (senior/staff flagged and excluded when configured)"
+      : "- React / frontend focus\n- Junior → senior level (staff/lead flagged, not dropped)";
+  const configLabel = options.isolated
+    ? "`config/job-search-nodejs-backend.json` (isolated run)"
+    : "`config/job-search.json`";
+  const filterLabel =
+    profile === "nodejsBackend"
+      ? "Node.js/backend + geo eligibility"
+      : "React/frontend + geo eligibility";
+  const statusByKey = buildStatusMap(result);
+  const newNigeriaEligible = result.newJobs.filter(
     (job) => job.geoEligibility === "nigeria_eligible",
   );
-  const verifyGeoJobs = result.newJobs.filter((job) => job.geoEligibility === "verify_geo");
+  const newVerifyGeo = result.newJobs.filter((job) => job.geoEligibility === "verify_geo");
+  const allNigeriaEligible = result.allMatched.filter(
+    (job) => job.geoEligibility === "nigeria_eligible",
+  );
+  const allVerifyGeo = result.allMatched.filter((job) => job.geoEligibility === "verify_geo");
 
   const stats = [
     `| Total matched (after filters) | ${result.allMatched.length} |`,
@@ -84,13 +146,14 @@ export function renderScanReport(result: ScanRunResult): string {
     `| New this run | **${result.newJobs.length}** |`,
     `| Previously seen (still open) | ${result.previouslySeen.length} |`,
     `| Excluded by filter | ${result.excluded.length} |`,
-    `| Fetch errors | ${result.fetchErrors.length} |`,
+    `| Blocklisted employers | ${result.blocklistExcluded} |`,
+    `| Source fetch errors | ${result.fetchErrors.length} |`,
   ].join("\n");
 
   const fetchErrors =
     result.fetchErrors.length === 0
       ? "_None._"
-      : result.fetchErrors.map((e) => `- **${e.company}:** ${e.error}`).join("\n");
+      : result.fetchErrors.map((e) => `- **${e.sourceId} (${e.adapter}):** ${e.error}`).join("\n");
 
   const excludedSample =
     result.excluded.length === 0
@@ -100,14 +163,20 @@ export function renderScanReport(result: ScanRunResult): string {
           .map((e) => `- ${e.posting.company} — ${e.posting.title}: ${e.reason}`)
           .join("\n");
 
+  const newSummary =
+    result.newJobs.length === 0
+      ? "_No new listings this run — all matches below were seen in a prior scan._"
+      : `**${result.newJobs.length}** new listing(s) this run.`;
+
   return `# Job Scan Report
 
 **Scan date:** ${result.scanDate}  
-**Source:** ATS registry (\`config/companies.json\`) — Greenhouse, Lever, Ashby, Workable, custom careers pages  
-**Applicant geo:** ${config.applicant.citizenship} citizen, work permit in ${config.applicant.workPermitCountries.join(", ")} only (\`config/job-search.json\`)  
+**Primary output:** this Markdown file (\`report.md\`). \`raw.json\` is a machine archive only.  
+**Source:** Public job boards (\`config/job-sources.json\`) — Himalayas, Jobicy, Remotive, Arbeitnow, Remote OK, We Work Remotely, HN Who is Hiring  
+**Applicant geo:** ${config.applicant.citizenship} citizen, work permit in ${config.applicant.workPermitCountries.join(", ")} only (${configLabel})  
+**New this run:** ${newSummary}  
 **Criteria:**
-- React / frontend focus
-- Junior → senior level (staff/lead flagged, not dropped)
+${roleCriteria}
 - **Nigeria-eligible:** global remote or explicit Nigeria/Africa/unrestricted hire signals
 - **Verify geo:** EMEA or unclear remote — manual check before applying
 - **Likely excluded:** EU/UK/US-only, hybrid/on-site, or Africa-excluded listings
@@ -116,22 +185,45 @@ export function renderScanReport(result: ScanRunResult): string {
 
 ## Method
 
-1. Fetch all registered company boards via public ATS JSON APIs (or custom careers HTML for non-ATS employers).
-2. Filter for React/frontend + geo eligibility (\`src/lib/jobs/geo.ts\`).
-3. Dedupe against \`~/.config/refine-cv/scan-state.json\` and applied jobs from prior report checkboxes.
-4. LinkedIn discovery is a separate low-volume step (\`pnpm discover-linkedin\`).
+1. Fetch enabled public job boards from \`config/job-sources.json\` (no login required).
+2. Normalize listings, apply employer blocklist from \`config/job-search.json\`.
+3. Filter for ${filterLabel} (\`src/lib/jobs/geo.ts\`).
+4. Dedupe against \`~/.config/refine-cv/scan-state.json\` and applied jobs from prior report checkboxes.
+5. LinkedIn discovery remains optional (\`pnpm discover-linkedin\`) and separate from this scan.
 
 ---
 
-## New listings — Nigeria-eligible
+## All matched — Nigeria-eligible
 
-${jobTableRows(nigeriaEligibleJobs)}
+Prioritize these. **Status:** New = first time seen; Seen = still open from a prior scan.
 
-## New listings — verify geo
+${jobTableRows(allNigeriaEligible, { status: statusByKey })}
+
+## All matched — verify geo
 
 Roles with EMEA or unclear remote scope without explicit Nigeria/Africa hire language. Confirm eligibility on the listing before applying.
 
-${jobTableRows(verifyGeoJobs)}
+${jobTableRows(allVerifyGeo, { status: statusByKey })}
+
+${
+  result.newJobs.length > 0
+    ? `---
+
+## New this run — Nigeria-eligible
+
+${jobTableRows(newNigeriaEligible)}
+
+## New this run — verify geo
+
+${jobTableRows(newVerifyGeo)}
+
+`
+    : ""
+}---
+
+## Source stats
+
+${sourceStatsTable(result)}
 
 ---
 
@@ -151,7 +243,7 @@ ${fetchErrors}
 
 ## Excluded sample (first 15)
 
-Includes likely geo exclusions (EU/UK/US-only, hybrid, Africa excluded) and non-frontend roles.
+Includes likely geo exclusions (EU/UK/US-only, hybrid, Africa excluded) and non-matching roles.
 
 ${excludedSample}
 

@@ -6,6 +6,7 @@ import type { GeoEligibility, JobPosting, RemoteScope } from "./types.js";
 const JobSearchConfigSchema = z.object({
   version: z.number(),
   applicant: z.object({
+    name: z.string().optional(),
     location: z.string(),
     citizenship: z.string(),
     workPermitCountries: z.array(z.string()),
@@ -17,12 +18,31 @@ const JobSearchConfigSchema = z.object({
     defaultEmeaToVerify: z.boolean(),
   }),
   roleFilters: z.object({
-    reactFrontend: z.boolean(),
+    reactFrontend: z.boolean().optional(),
+    profile: z.enum(["reactFrontend", "nodejsBackend"]).optional(),
     levels: z.array(z.string()),
   }),
+  blocklist: z.array(z.string()).default([]),
 });
 
 export type JobSearchConfig = z.infer<typeof JobSearchConfigSchema>;
+export type RoleProfile = "reactFrontend" | "nodejsBackend";
+
+let jobSearchConfigOverride: string | null = null;
+
+export function setJobSearchConfigPath(configPath: string | null): void {
+  jobSearchConfigOverride = configPath;
+}
+
+export function resolveRoleProfile(config: JobSearchConfig): RoleProfile {
+  if (config.roleFilters.profile) {
+    return config.roleFilters.profile;
+  }
+  if (config.roleFilters.reactFrontend === false) {
+    return "nodejsBackend";
+  }
+  return "reactFrontend";
+}
 
 /** Signals the role explicitly allows Nigeria, Africa, or unrestricted global hire. */
 export const NIGERIA_POSITIVE_PATTERNS = [
@@ -68,11 +88,15 @@ export const GEO_EXCLUSION_PATTERNS = [
 ];
 
 export function loadJobSearchConfig(): JobSearchConfig {
-  const configPath = paths.jobSearchConfig;
+  const configPath = jobSearchConfigOverride ?? paths.jobSearchConfig;
   if (!existsSync(configPath)) {
     throw new Error(`Missing job search config: ${configPath}`);
   }
   return JobSearchConfigSchema.parse(JSON.parse(readFileSync(configPath, "utf8")));
+}
+
+export function loadBlocklist(): string[] {
+  return loadJobSearchConfig().blocklist;
 }
 
 export function postingHaystack(posting: Pick<JobPosting, "location" | "description">): string {

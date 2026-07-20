@@ -3,10 +3,9 @@ import { createInterface } from "node:readline";
 import { join } from "node:path";
 import { type BrowserContext, type Page, type Response } from "playwright";
 import { paths } from "../paths.js";
-import { probeAtsSlug } from "./ats/index.js";
 import { launchChromeContext } from "./browser.js";
 import { isBlocklisted, normalizeCompanyName } from "./dedupe.js";
-import { loadCompaniesConfig } from "./scan.js";
+import { loadBlocklist } from "./geo.js";
 import {
   LINKEDIN_DISCOVERY_STATE_PATH,
   LINKEDIN_PROFILE_DIR,
@@ -41,7 +40,8 @@ export interface LinkedInDiscoveryStats {
   enrichedHits: number;
   withExternalApply: number;
   easyApplyOnly: number;
-  newCompanies: number;
+  eligibleJobs: number;
+  blocklisted: number;
   detailFetches: number;
 }
 
@@ -55,7 +55,8 @@ interface LinkedInDiscoveryState {
   lastRunAt: string | null;
 }
 
-const LIST_SCROLL_SELECTOR = ".jobs-search-results-list, .scaffold-layout__list";
+const LIST_SCROLL_SELECTOR =
+  ".jobs-search-results-list, .scaffold-layout__list";
 const JOB_CARD_SELECTOR = ".job-card-container";
 
 function buildSearchUrl(page: number): string {
@@ -83,12 +84,17 @@ function loadDiscoveryState(): LinkedInDiscoveryState {
   if (!existsSync(LINKEDIN_DISCOVERY_STATE_PATH)) {
     return { lastRunAt: null };
   }
-  return JSON.parse(readFileSync(LINKEDIN_DISCOVERY_STATE_PATH, "utf8")) as LinkedInDiscoveryState;
+  return JSON.parse(
+    readFileSync(LINKEDIN_DISCOVERY_STATE_PATH, "utf8"),
+  ) as LinkedInDiscoveryState;
 }
 
 function saveDiscoveryState(state: LinkedInDiscoveryState): void {
   mkdirSync(join(LINKEDIN_PROFILE_DIR, ".."), { recursive: true });
-  writeFileSync(LINKEDIN_DISCOVERY_STATE_PATH, `${JSON.stringify(state, null, 2)}\n`);
+  writeFileSync(
+    LINKEDIN_DISCOVERY_STATE_PATH,
+    `${JSON.stringify(state, null, 2)}\n`,
+  );
 }
 
 function createVoyagerSearchCapture(): {
@@ -126,8 +132,16 @@ async function isLoginWall(page: Page): Promise<boolean> {
   if (url.includes("/login") || url.includes("/checkpoint")) {
     return true;
   }
-  const signIn = await page.locator('text=Sign in').first().isVisible().catch(() => false);
-  const joinNow = await page.locator('text=Join now').first().isVisible().catch(() => false);
+  const signIn = await page
+    .locator("text=Sign in")
+    .first()
+    .isVisible()
+    .catch(() => false);
+  const joinNow = await page
+    .locator("text=Join now")
+    .first()
+    .isVisible()
+    .catch(() => false);
   return signIn && joinNow;
 }
 
@@ -160,49 +174,67 @@ async function fetchJobApplyInfo(
   page: Page,
   csrf: string,
   jobId: string,
-): Promise<{ externalApplyUrl?: string; easyApplyOnly: boolean; company?: string }> {
+): Promise<{
+  externalApplyUrl?: string;
+  easyApplyOnly: boolean;
+  company?: string;
+}> {
   const urls = buildVoyagerDetailUrls(jobId);
 
-  return page.evaluate(
-    async ({ detailUrls, csrfToken }) => {
-      for (const url of detailUrls) {
-        try {
-          const response = await fetch(url, {
-            headers: {
-              "csrf-token": csrfToken,
-              accept: "application/vnd.linkedin.normalized+json+2.1",
-            },
-          });
-          if (!response.ok) {
-            continue;
+  return page
+    .evaluate(
+      async ({ detailUrls, csrfToken }) => {
+        for (const url of detailUrls) {
+          try {
+            const response = await fetch(url, {
+              headers: {
+                "csrf-token": csrfToken,
+                accept: "application/vnd.linkedin.normalized+json+2.1",
+              },
+            });
+            if (!response.ok) {
+              continue;
+            }
+            return await response.json();
+          } catch {
+            // try next endpoint
           }
-          return await response.json();
-        } catch {
-          // try next endpoint
         }
-      }
-      return null;
-    },
-    { detailUrls: urls, csrfToken: csrf },
-  ).then((payload) => parseVoyagerJobDetailPayload(payload));
+        return null;
+      },
+      { detailUrls: urls, csrfToken: csrf },
+    )
+    .then((payload) => parseVoyagerJobDetailPayload(payload));
 }
 
-async function extractSearchHitsFromDom(page: Page): Promise<VoyagerSearchHit[]> {
+async function extractSearchHitsFromDom(
+  page: Page,
+): Promise<VoyagerSearchHit[]> {
   return page.evaluate(() => {
     const cards = Array.from(document.querySelectorAll(".job-card-container"));
-    const hits: Array<{ jobId: string; title: string; company: string; linkedinUrl: string }> = [];
+    const hits: Array<{
+      jobId: string;
+      title: string;
+      company: string;
+      linkedinUrl: string;
+    }> = [];
 
     for (const card of cards) {
-      const link = card.querySelector("a[href*='/jobs/view/']") as HTMLAnchorElement | null;
+      const link = card.querySelector(
+        "a[href*='/jobs/view/']",
+      ) as HTMLAnchorElement | null;
       const href = link?.href ?? "";
       const jobId = href.match(/jobs\/view\/(\d+)/)?.[1];
       const title =
-        card.querySelector(".job-card-list__title, .artdeco-entity-lockup__title")?.textContent?.trim() ??
-        "";
+        card
+          .querySelector(".job-card-list__title, .artdeco-entity-lockup__title")
+          ?.textContent?.trim() ?? "";
       const company =
-        card.querySelector(
-          ".job-card-container__company-name, .artdeco-entity-lockup__subtitle",
-        )?.textContent?.trim() ?? "";
+        card
+          .querySelector(
+            ".job-card-container__company-name, .artdeco-entity-lockup__subtitle",
+          )
+          ?.textContent?.trim() ?? "";
 
       if (jobId && title) {
         hits.push({
@@ -228,7 +260,9 @@ async function mergeCompanyNamesFromDom(
   return hits.map((hit) => ({
     ...hit,
     company:
-      hit.company === "Unknown" ? (byJobId.get(hit.jobId) ?? hit.company) : hit.company,
+      hit.company === "Unknown"
+        ? (byJobId.get(hit.jobId) ?? hit.company)
+        : hit.company,
   }));
 }
 
@@ -253,7 +287,9 @@ async function collectSearchPageHits(
   await scrollJobList(page);
   await randomDelay(1500, 2500);
 
-  let hits = dedupeSearchHits(parseVoyagerSearchPayloads(capture.getPayloads()));
+  let hits = dedupeSearchHits(
+    parseVoyagerSearchPayloads(capture.getPayloads()),
+  );
 
   if (hits.length === 0) {
     hits = await extractSearchHitsFromDom(page);
@@ -287,7 +323,9 @@ async function enrichSearchHits(
           return applyInfo.company;
         }
         if (applyInfo.externalApplyUrl) {
-          return companyFromApplyUrl(applyInfo.externalApplyUrl) ?? searchHit.company;
+          return (
+            companyFromApplyUrl(applyInfo.externalApplyUrl) ?? searchHit.company
+          );
         }
         return searchHit.company;
       })(),
@@ -318,15 +356,13 @@ async function waitForEnter(prompt: string): Promise<void> {
   });
 }
 
-function slugifyCompany(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 40);
-}
-
 export async function runLinkedInLogin(): Promise<void> {
   const context = await launchLinkedInContext(true);
 
   const page = context.pages()[0] ?? (await context.newPage());
-  await page.goto("https://www.linkedin.com/login", { waitUntil: "domcontentloaded" });
+  await page.goto("https://www.linkedin.com/login", {
+    waitUntil: "domcontentloaded",
+  });
 
   console.log("\nLinkedIn login window opened.");
   console.log("1. Sign in manually (including 2FA if prompted).");
@@ -368,20 +404,28 @@ export async function runLinkedInDiscovery(
   let pagesScanned = 0;
   let totalDetailFetches = 0;
   const perPageCounts: number[] = [];
+  const blocklist = loadBlocklist();
 
   try {
     for (let pageNum = 1; pageNum <= maxPages; pageNum += 1) {
       const capture = createVoyagerSearchCapture();
       page.on("response", capture.handler);
 
-      await page.goto(buildSearchUrl(pageNum), { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.goto(buildSearchUrl(pageNum), {
+        waitUntil: "domcontentloaded",
+        timeout: 45000,
+      });
       await randomDelay(2000, 4000);
 
       if (await isLoginWall(page)) {
-        throw new Error("Login wall detected. Run `pnpm linkedin:login` and sign in again.");
+        throw new Error(
+          "Login wall detected. Run `pnpm linkedin:login` and sign in again.",
+        );
       }
 
-      const searchHits = dedupeSearchHits(await collectSearchPageHits(page, capture));
+      const searchHits = dedupeSearchHits(
+        await collectSearchPageHits(page, capture),
+      );
       page.off("response", capture.handler);
       perPageCounts.push(searchHits.length);
       pagesScanned += 1;
@@ -390,11 +434,15 @@ export async function runLinkedInDiscovery(
         break;
       }
 
-      const { hits: pageHits, detailFetches } = await enrichSearchHits(page, context, searchHits);
+      const { hits: pageHits, detailFetches } = await enrichSearchHits(
+        page,
+        context,
+        searchHits,
+      );
       totalDetailFetches += detailFetches;
 
       for (const hit of pageHits) {
-        const key = `${hit.company}::${hit.title}`;
+        const key = `${normalizeCompanyName(hit.company)}::${hit.title}`;
         if (!seen.has(key)) {
           seen.add(key);
           allHits.push(hit);
@@ -411,15 +459,13 @@ export async function runLinkedInDiscovery(
     }
 
     const withExternal = allHits.filter((hit) => hit.externalApplyUrl);
-    const easyApplyOnly = allHits.filter((hit) => hit.easyApplyOnly && !hit.externalApplyUrl);
-
-    const config = loadCompaniesConfig();
-    const known = new Set(config.companies.map((c) => normalizeCompanyName(c.name)));
-    const discoveries = withExternal.filter(
-      (hit) =>
-        !known.has(normalizeCompanyName(hit.company)) &&
-        !isBlocklisted(hit.company, config.blocklist),
+    const easyApplyOnly = allHits.filter(
+      (hit) => hit.easyApplyOnly && !hit.externalApplyUrl,
     );
+    const eligible = withExternal.filter(
+      (hit) => !isBlocklisted(hit.company, blocklist),
+    );
+    const blocklisted = withExternal.length - eligible.length;
 
     const stats: LinkedInDiscoveryStats = {
       pagesRequested: maxPages,
@@ -428,7 +474,8 @@ export async function runLinkedInDiscovery(
       enrichedHits: allHits.length,
       withExternalApply: withExternal.length,
       easyApplyOnly: easyApplyOnly.length,
-      newCompanies: discoveries.length,
+      eligibleJobs: eligible.length,
+      blocklisted,
       detailFetches: totalDetailFetches,
     };
 
@@ -437,7 +484,7 @@ export async function runLinkedInDiscovery(
       .join("\n");
 
     const lines: string[] = [
-      "# LinkedIn discovery review",
+      "# LinkedIn discovery",
       "",
       `**Run date:** ${new Date().toISOString()}`,
       `**Pages requested:** ${maxPages}`,
@@ -446,35 +493,36 @@ export async function runLinkedInDiscovery(
       `**Detail API fetches:** ${totalDetailFetches}`,
       `**With external apply URL:** ${withExternal.length}`,
       `**Easy Apply only (skipped):** ${easyApplyOnly.length}`,
-      `**New companies (not in registry):** ${discoveries.length}`,
+      `**Eligible after blocklist:** ${eligible.length}`,
+      `**Blocklisted:** ${blocklisted}`,
       "",
       "## Per-page extraction",
       "",
       perPageLine || "_No pages scanned._",
       "",
-      "## Review and add to config/companies.json",
+      "## External-apply listings (blocklist filtered)",
       "",
     ];
 
-    for (const hit of discoveries) {
-      const slug = slugifyCompany(hit.company);
-      const probe = await probeAtsSlug(slug);
-      const atsHint = probe ? `${probe.ats} (slug: ${slug})` : "unknown ATS — verify manually";
+    for (const hit of eligible) {
       lines.push(
         `- **${hit.company}** — ${hit.title}`,
         `  - LinkedIn: ${hit.linkedinUrl}`,
         `  - Apply: ${hit.externalApplyUrl}`,
-        `  - Suggested: ${atsHint}`,
         "",
       );
     }
 
-    if (discoveries.length === 0) {
-      lines.push("_No new companies discovered this run._");
+    if (eligible.length === 0) {
+      lines.push("_No eligible external-apply listings this run._");
       if (withExternal.length > 0) {
-        lines.push("", "## Known companies with external apply (sample)", "");
-        for (const hit of withExternal.slice(0, 10)) {
-          lines.push(`- ${hit.company} — ${hit.title} — ${hit.externalApplyUrl}`);
+        lines.push("", "## Blocklisted external apply (sample)", "");
+        for (const hit of withExternal
+          .filter((entry) => isBlocklisted(entry.company, blocklist))
+          .slice(0, 10)) {
+          lines.push(
+            `- ${hit.company} — ${hit.title} — ${hit.externalApplyUrl}`,
+          );
         }
       }
       if (easyApplyOnly.length > 0) {
@@ -488,14 +536,14 @@ export async function runLinkedInDiscovery(
     const outputPath = join(
       paths.jobsDir,
       `${new Date().toISOString().slice(0, 10)}-job-scan`,
-      "discovered-companies.md",
+      "linkedin-discovery.md",
     );
     mkdirSync(join(outputPath, ".."), { recursive: true });
     writeFileSync(outputPath, `${lines.join("\n")}\n`);
 
     saveDiscoveryState({ lastRunAt: new Date().toISOString() });
 
-    return { outputPath, hits: discoveries, stats };
+    return { outputPath, hits: eligible, stats };
   } finally {
     await context.close();
   }

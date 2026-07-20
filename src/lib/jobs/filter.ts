@@ -3,7 +3,12 @@ import {
   geoExclusionReason,
   isRestrictedRemoteScope,
 } from "./geo.js";
-import type { GeoEligibility, JobPosting, LevelHint, RemoteScope } from "./types.js";
+import type {
+  GeoEligibility,
+  JobPosting,
+  LevelHint,
+  RemoteScope,
+} from "./types.js";
 
 const TITLE_FRONTEND_PATTERNS = [
   /\bfrontend\b/i,
@@ -49,7 +54,11 @@ const TITLE_EXCLUDE_PATTERNS = [
   /\bobservability\b/i,
 ];
 
-const DESCRIPTION_REACT_PATTERNS = [/\breact\b/i, /\bnext\.?js\b/i, /\breact\.js\b/i];
+const DESCRIPTION_REACT_PATTERNS = [
+  /\breact\b/i,
+  /\bnext\.?js\b/i,
+  /\breact\.js\b/i,
+];
 
 const EXCLUDE_STACK = ["angular", "vue 3", "vue.js"];
 
@@ -84,14 +93,20 @@ const RESTRICTED_PATTERNS = [
   /\bpoland only\b/i,
 ];
 
-export function classifyRemoteScope(location: string, description: string): RemoteScope {
+export function classifyRemoteScope(
+  location: string,
+  description: string,
+): RemoteScope {
   const loc = location.toLowerCase().trim();
 
   if (loc) {
     if (/\bhome based - worldwide\b/i.test(loc) || /\bworldwide\b/i.test(loc)) {
       return "global";
     }
-    if (/\bhome based - emea\b/i.test(loc) || (/\bemea\b/i.test(loc) && !/\bworldwide\b/i.test(loc))) {
+    if (
+      /\bhome based - emea\b/i.test(loc) ||
+      (/\bemea\b/i.test(loc) && !/\bworldwide\b/i.test(loc))
+    ) {
       return "emea";
     }
     if (GLOBAL_REMOTE_PATTERNS.some((pattern) => pattern.test(loc))) {
@@ -150,7 +165,9 @@ function hasReactFocus(title: string, description: string): boolean {
     return false;
   }
 
-  const titleMatch = TITLE_FRONTEND_PATTERNS.some((pattern) => pattern.test(title));
+  const titleMatch = TITLE_FRONTEND_PATTERNS.some((pattern) =>
+    pattern.test(title),
+  );
   if (titleMatch) {
     const titleLower = title.toLowerCase();
     const excludePrimary =
@@ -190,7 +207,10 @@ export function matchesScanCriteria(posting: JobPosting): {
     return { ok: false, reason: geoExclusionReason(posting), geoEligibility };
   }
 
-  if (isRestrictedRemoteScope(posting.remoteScope) && geoEligibility !== "nigeria_eligible") {
+  if (
+    isRestrictedRemoteScope(posting.remoteScope) &&
+    geoEligibility !== "nigeria_eligible"
+  ) {
     return {
       ok: false,
       reason: "Remote scope too restricted (US-only/hybrid/on-site)",
@@ -230,6 +250,9 @@ export function inferRemoteScopeFromFields(
   return classifyRemoteScope(location, description);
 }
 
-export function inferLevelFromFields(title: string, description: string): LevelHint {
+export function inferLevelFromFields(
+  title: string,
+  description: string,
+): LevelHint {
   return classifyLevel(title, description);
 }
