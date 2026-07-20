@@ -42,7 +42,7 @@ function fixture() {
     priorIndexBytes,
     priorStateBytes,
     index: {
-      version: GITHUB_INDEX_VERSION as const,
+      version: GITHUB_INDEX_VERSION,
       snapshotAt: "2026-07-20T00:00:00Z",
       indexScope: "author-full-history" as const,
       authorIdentity: { githubLogins: [], commitNames: [] },

@@ -20,12 +20,13 @@
     "extract-toptal-guides": "pnpm build && node dist/bin/extract-toptal-guides.js",
     "setup:pdf": "pnpm exec puppeteer browsers install chrome",
     "setup:linkedin": "pnpm exec playwright install chrome",
-    "postinstall": "pnpm exec puppeteer browsers install chrome",
     "auth:github": "gh auth login",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "typecheck:tests": "tsc -p tsconfig.test.json --noEmit",
+    "check:release": "node --experimental-strip-types scripts/check-release-safety.ts"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
     "@octokit/graphql": "^9.0.3",

@@ -2,6 +2,9 @@ import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { paths } from "./paths.js";
 import { loadGitHubConfig } from "./config.js";
+import { loadJobSourcesConfig } from "./jobs/sources/registry.js";
+import { loadJobSearchConfigAt } from "./jobs/scan-policy.js";
+import { LINKEDIN_PROFILE_DIR } from "./jobs/state.js";
 
 type Status = "ok" | "warn" | "fail";
 
@@ -110,6 +113,51 @@ export function runValidateSetup(): number {
     }
   } else {
     check("warn", "base-cv-enhanced.md missing", counts);
+  }
+
+  try {
+    const sources = loadJobSourcesConfig();
+    const enabled = sources.sources.filter((source) => source.enabled).length;
+    check("ok", `config/job-sources.json valid (${enabled} enabled board(s))`, counts);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    check("fail", `config/job-sources.json invalid or missing — ${message}`, counts);
+  }
+
+  try {
+    loadJobSearchConfigAt(paths.jobSearchConfig);
+    check("ok", "config/job-search.json valid", counts);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    check("fail", `config/job-search.json invalid or missing — ${message}`, counts);
+  }
+
+  if (existsSync(paths.jobSearchNodejsBackendConfig)) {
+    try {
+      loadJobSearchConfigAt(paths.jobSearchNodejsBackendConfig);
+      check("ok", "config/job-search-nodejs-backend.json valid", counts);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      check("warn", `config/job-search-nodejs-backend.json invalid — ${message}`, counts);
+    }
+  } else {
+    check("warn", "config/job-search-nodejs-backend.json missing (optional backend profile)", counts);
+  }
+
+  if (existsSync(paths.scanJobsSkill)) {
+    check("ok", "scan-jobs skill", counts);
+  } else {
+    check("fail", "missing scan-jobs skill", counts);
+  }
+
+  if (existsSync(LINKEDIN_PROFILE_DIR)) {
+    check("ok", "LinkedIn session profile present (optional discovery)", counts);
+  } else {
+    check(
+      "warn",
+      "no LinkedIn session — optional; run pnpm linkedin:login for discovery",
+      counts,
+    );
   }
 
   console.log(`\nSummary: ${counts.ok} ok, ${counts.warn} warn, ${counts.fail} fail`);

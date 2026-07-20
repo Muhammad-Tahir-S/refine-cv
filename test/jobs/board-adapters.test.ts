@@ -182,7 +182,7 @@ describe("board adapter fixtures", () => {
   });
 
   it("HN hiring parses backend comments without adapter-side role filtering", () => {
-    const item = readFixture("hn-hiring-valid.json");
+    const item = readFixture("hn-hiring-valid.json") as { children: unknown };
     const result = parseHnHiringComments(
       item.children as never,
       "999",

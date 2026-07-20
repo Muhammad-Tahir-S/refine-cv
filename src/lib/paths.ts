@@ -8,6 +8,7 @@ export const paths = {
   root: ROOT,
   config: join(ROOT, "config", "github-repos.json"),
   jobSearchConfig: join(ROOT, "config", "job-search.json"),
+  jobSearchNodejsBackendConfig: join(ROOT, "config", "job-search-nodejs-backend.json"),
   jobSourcesConfig: join(ROOT, "config", "job-sources.json"),
   jobsDir: join(ROOT, "jobs"),
   profile: join(ROOT, "profile"),

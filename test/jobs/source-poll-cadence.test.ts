@@ -205,6 +205,7 @@ describe("fetchAllBoardPostings cadence", () => {
           adapter: source.adapter,
           postings: [],
           quarantined: 0,
+          requestUrls: [],
         };
       },
     }));
@@ -239,6 +240,7 @@ describe("fetchAllBoardPostings cadence", () => {
       adapter: source.adapter,
       postings: [],
       quarantined: 0,
+      requestUrls: [],
     }));
     vi.spyOn(boards, "getBoardAdapter").mockReturnValue({
       id: "jobicy",
@@ -285,6 +287,7 @@ describe("scan outcome classification", () => {
         matched: 0,
         durationMs: 0,
         failed: false,
+        requestUrls: [],
       },
     ];
     const outage: SourceStats[] = [
@@ -298,6 +301,7 @@ describe("scan outcome classification", () => {
         matched: 0,
         durationMs: 12,
         failed: true,
+        requestUrls: [],
       },
     ];
 
@@ -350,6 +354,7 @@ describe("runJobScan poll-state durability", () => {
               matched: 0,
               durationMs: 1,
               failed: true,
+              requestUrls: [],
             },
           ],
           blocklistExcluded: 0,

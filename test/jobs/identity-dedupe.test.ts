@@ -635,6 +635,7 @@ describe("attachSourceMatchCounts", () => {
         matched: 0,
         durationMs: 1,
         failed: false,
+        requestUrls: [],
       },
       {
         sourceId: "remotive",
@@ -646,6 +647,7 @@ describe("attachSourceMatchCounts", () => {
         matched: 0,
         durationMs: 1,
         failed: false,
+        requestUrls: [],
       },
       {
         sourceId: "wwr",
@@ -657,6 +659,7 @@ describe("attachSourceMatchCounts", () => {
         matched: 0,
         durationMs: 1,
         failed: false,
+        requestUrls: [],
       },
     ];
 

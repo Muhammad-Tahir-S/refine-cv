@@ -34,6 +34,7 @@ describe("dedupe", () => {
     const posting = {
       dedupeKey: "url::https://example.com/jobs/1",
       legacyDedupeKey: makeLegacyDedupeKey("Acme", "React Engineer"),
+      identityAliases: [] as string[],
     };
     expect(isKnownInState(posting, { [posting.legacyDedupeKey]: {} })).toBe(true);
   });

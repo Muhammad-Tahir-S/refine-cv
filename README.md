@@ -18,7 +18,9 @@ Built with **TypeScript** and **pnpm** (no Python or shell scripts).
 
 ```bash
 nvm use          # optional
-pnpm install     # also installs Chromium for PDF export
+pnpm install
+pnpm setup:pdf   # optional — Chromium for PDF export (pnpm render-cv)
+pnpm setup:linkedin  # optional — Chrome for LinkedIn discovery
 pnpm build
 pnpm validate    # check onboarding readiness
 ```
@@ -31,7 +33,7 @@ pnpm validate    # check onboarding readiness
 |-------|------|
 | `src/bin/` | CLI scripts (extract, index, scan, render) |
 | `profile/` | Your CV, questionnaire, GitHub index, Toptal snapshots |
-| `config/` | GitHub repo list, company registry for job scan |
+| `config/` | GitHub repo list, job board sources (`job-sources.json`) and search policy (`job-search.json`) |
 | `sources/` | Writing authorities (CV, Toptal, anti-AI style) |
 | `jobs/` | One folder per application or job-scan run |
 | `.cursor/skills/` | Agent workflows |
@@ -122,7 +124,7 @@ Paste JD in chat → /tailor-cv
 | Script | Purpose |
 |--------|---------|
 | `pnpm render-cv <path>` | Markdown CV → ATS-friendly PDF |
-| `pnpm setup:pdf` | Install Chromium for Puppeteer (runs on `pnpm install`) |
+| `pnpm setup:pdf` | Install Chromium for Puppeteer (required for `pnpm render-cv`) |
 
 **Outputs** (under `jobs/YYYY-MM-DD-company-role/`)
 
@@ -406,6 +408,7 @@ Manual anytime:
 | Command | Feature |
 |---------|---------|
 | `/tailor-cv` | CV tailoring |
+| `/generate-cover-letter` | Cover letter from JD |
 | `/toptal-pitch` | Toptal pitch |
 | `/enhance-toptal-profile` | Toptal profile |
 | `/avoid-ai-writing` | Anti-AI deep audit |
@@ -439,6 +442,8 @@ Manual anytime:
 | `pnpm setup:linkedin` | Playwright Chrome install |
 | `pnpm auth:github` | GitHub CLI login |
 | `pnpm typecheck` | Dev |
+| `pnpm typecheck:tests` | Dev (typecheck test + script sources) |
+| `pnpm check:release` | Dev (scan tracked files for secrets) |
 | `pnpm build` | Dev |
 
 ---
@@ -502,3 +507,6 @@ pnpm auth:github
 ## Privacy
 
 Private and employer repos are indexed for **metadata only** (commit subjects, PR titles, languages). Tailored outputs must **not** include proprietary source code. See `profile/questionnaire.md` red lines.
+
+- `.env` and token files are gitignored — CI runs `pnpm check:release` to fail if secrets are tracked.
+- `jobs/**` may contain employer-specific drafts and pasted job descriptions; keep the repository private.

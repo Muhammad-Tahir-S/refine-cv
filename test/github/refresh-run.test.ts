@@ -87,7 +87,7 @@ function basePrior(repo: string) {
 describe("github refresh run", () => {
   it("merges two consecutive incremental runs without losing history", () => {
     const priorIndex = {
-      version: GITHUB_INDEX_VERSION as const,
+      version: GITHUB_INDEX_VERSION,
       snapshotAt: "2026-07-19T10:00:00Z",
       indexScope: "author-full-history" as const,
       authorIdentity: { githubLogins: ["dev"], commitNames: ["Dev"] },
@@ -467,7 +467,7 @@ describe("github artifact persistence", () => {
     atomicWriteJson(artifactPaths.indexState, priorState, { backup: false });
 
     const index = {
-      version: GITHUB_INDEX_VERSION as const,
+      version: GITHUB_INDEX_VERSION,
       snapshotAt: "2026-07-20T10:00:00Z",
       indexScope: "author-full-history" as const,
       authorIdentity: { githubLogins: ["dev"], commitNames: ["Dev"] },

@@ -502,7 +502,7 @@ describe("runJobScan durability ordering", () => {
         };
       },
       runPipeline: async (_policy, options) => {
-        expect(options.sources).toEqual([source]);
+        expect(options!.sources).toEqual([source]);
         return emptyPipeline(posting);
       },
       metadataReader: {
