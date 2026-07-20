@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { makeLegacyDedupeKey } from "../../src/lib/jobs/dedupe.ts";
+import { makeTestPosting } from "../../src/lib/jobs/normalize.ts";
 import { partitionScanResults } from "../../src/lib/jobs/pipeline.ts";
 import type { JobPosting } from "../../src/lib/jobs/types.ts";
 import {
@@ -38,21 +39,12 @@ afterEach(() => {
 });
 
 function samplePosting(overrides: Partial<JobPosting> = {}): JobPosting {
-  const legacyDedupeKey = makeLegacyDedupeKey("Acme", "React Engineer");
-  return {
+  return makeTestPosting({
     company: "Acme",
     title: "React Engineer",
     url: "https://example.com/jobs/react",
-    location: "Worldwide",
-    remoteScope: "global",
-    level: "senior",
-    description: "React role",
-    source: "jobicy",
-    fetchedAt: "2026-07-18T12:00:00.000Z",
-    dedupeKey: "url::https://example.com/jobs/react",
-    legacyDedupeKey,
     ...overrides,
-  };
+  });
 }
 
 describe("scan state migration", () => {

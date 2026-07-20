@@ -17,14 +17,16 @@ import type { JobPosting, ScanRunResult } from "../../src/lib/jobs/types.ts";
 import { paths } from "../../src/lib/paths.ts";
 import { partitionScanResults } from "../../src/lib/jobs/pipeline.ts";
 
+const emptyDedupeSummary = { inputCount: 0, outputCount: 0, mergedCount: 0 };
+
 describe("dedupe", () => {
-  it("prefers canonical URL keys", () => {
+  it("prefers canonical URL keys and strips utm tracking params", () => {
     const key = makeDedupeKeyFromPosting({
       sourceId: "jobicy",
       sourceJobId: "123",
       company: "Acme",
       title: "React Engineer",
-      url: "https://jobicy.com/jobs/123?utm=1",
+      url: "https://jobicy.com/jobs/123?utm_source=newsletter",
     });
     expect(key).toBe("url::https://jobicy.com/jobs/123");
   });
@@ -175,6 +177,7 @@ describe("report", () => {
       lifecycleSuppressed: { applied: 0, dismissed: 0, expired: 0 },
       excluded: [],
       blocklistExcluded: 0,
+      dedupeSummary: emptyDedupeSummary,
       fetchErrors: [],
       sourceStats: [],
       outcome: {

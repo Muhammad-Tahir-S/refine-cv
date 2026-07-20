@@ -34,6 +34,14 @@ function formatRemoteScope(scope: JobPosting["remoteScope"]): string {
   }
 }
 
+function formatConfiguredSources(job: JobPosting): string {
+  const sourceIds =
+    job.configuredSourceIds.length > 0
+      ? job.configuredSourceIds
+      : job.provenance.map((record) => record.configuredSourceId);
+  return [...new Set(sourceIds)].join(", ");
+}
+
 function formatGeoEligibility(eligibility: GeoEligibility | undefined): string {
   if (!eligibility) {
     return "Unknown";
@@ -62,7 +70,7 @@ function jobTableRows(
         formatLevel(job.level),
         formatRemoteScope(job.remoteScope),
         formatGeoEligibility(job.geoEligibility),
-        job.source,
+        formatConfiguredSources(job),
         job.url,
       ];
       if (showStatus) {
@@ -177,6 +185,7 @@ export function renderScanReport(result: ScanRunResult): string {
     `| Expired (lifecycle suppressed) | ${result.lifecycleSuppressed.expired} |`,
     `| Excluded by filter | ${result.excluded.length} |`,
     `| Blocklisted employers | ${result.blocklistExcluded} |`,
+    `| Deduped before filter | ${result.dedupeSummary.mergedCount} merged (${result.dedupeSummary.inputCount} → ${result.dedupeSummary.outputCount}) |`,
     `| Source fetch errors | ${result.fetchErrors.length} |`,
   ].join("\n");
 
@@ -223,7 +232,7 @@ ${policyJsonBlock(result)}
 ## Method
 
 1. Fetch enabled public job boards from \`config/job-sources.json\` (no login required). Sources respect \`minPollHours\` cadence unless \`pnpm scan-jobs --force\` is used.
-2. Normalize listings, apply employer blocklist from \`${policy.configLabel}\`.
+2. Normalize listings, deduplicate overlapping identities across configured sources, apply employer blocklist from \`${policy.configLabel}\`.
 3. Filter for ${filterLabel} using the policy above.
 4. Dedupe against profile-specific \`~/.config/refine-cv/scan-state.json\` entries and lifecycle state (\`applied\`, \`dismissed\`, \`expired\`) from prior report checkboxes.
 5. LinkedIn discovery remains optional (\`pnpm discover-linkedin\`) and separate from this scan.

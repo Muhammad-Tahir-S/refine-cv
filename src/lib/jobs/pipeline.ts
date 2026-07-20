@@ -2,6 +2,7 @@ import { HttpRequestError } from "./http-client.js";
 import { getBoardAdapter } from "./boards/index.js";
 import { findInStateMap, isBlocklisted, isKnownInState } from "./dedupe.js";
 import { filterPostings } from "./filter.js";
+import { dedupePostings } from "./merge.js";
 import { normalizeRawPosting } from "./normalize.js";
 import type { ScanPolicy } from "./scan-policy.js";
 import {
@@ -13,6 +14,7 @@ import {
 } from "./source-poll-state.js";
 import { getEnabledSources, loadJobSourcesConfig } from "./sources/registry.js";
 import type {
+  DedupeSummary,
   JobPosting,
   JobSourceEntry,
   JobLifecycleState,
@@ -58,6 +60,7 @@ export interface PipelineFetchResult {
   pollStateUpdates: SourcePollUpdate[];
   hadSuccessfulSourceFetch: boolean;
   outcome: ScanRunOutcome;
+  dedupeSummary: DedupeSummary;
 }
 
 interface SourceWorkerResult {
@@ -204,7 +207,13 @@ export async function fetchAllBoardPostings(
         const adapter = getBoardAdapter(source.adapter);
         const result = await adapter.fetch(source);
         const completedAt = now().toISOString();
-        const normalized = result.postings.map((raw) => normalizeRawPosting(raw, fetchedAt));
+        const normalized = result.postings.map((raw) =>
+          normalizeRawPosting(raw, {
+            configuredSourceId: source.id,
+            adapterId: source.adapter,
+            fetchedAt,
+          }),
+        );
         const kept: JobPosting[] = [];
         let blocklistExcluded = 0;
 
@@ -291,15 +300,17 @@ export async function fetchAllBoardPostings(
   }
 
   const outcome = evaluateScanOutcome(sourceStats);
+  const dedupeResult = dedupePostings(allPostings);
 
   return {
-    postings: allPostings,
+    postings: dedupeResult.postings,
     fetchErrors,
     sourceStats,
     blocklistExcluded,
     pollStateUpdates,
     hadSuccessfulSourceFetch: outcome.succeededSources > 0,
     outcome,
+    dedupeSummary: dedupeResult.summary,
   };
 }
 
@@ -368,12 +379,17 @@ export function attachSourceMatchCounts(
 ): SourceStats[] {
   const counts = new Map<string, number>();
   for (const posting of matched) {
-    counts.set(posting.source, (counts.get(posting.source) ?? 0) + 1);
+    const configuredSourceIds = new Set(
+      posting.provenance.map((record) => record.configuredSourceId),
+    );
+    for (const sourceId of configuredSourceIds) {
+      counts.set(sourceId, (counts.get(sourceId) ?? 0) + 1);
+    }
   }
 
   return sourceStats.map((stat) => ({
     ...stat,
-    matched: counts.get(stat.adapter) ?? 0,
+    matched: counts.get(stat.sourceId) ?? 0,
   }));
 }
 
@@ -397,6 +413,7 @@ export async function runScanPipeline(
   pollStateUpdates: SourcePollUpdate[];
   hadSuccessfulSourceFetch: boolean;
   outcome: ScanRunOutcome;
+  dedupeSummary: DedupeSummary;
 }> {
   const fetchedAt = (options.now ?? (() => new Date()))().toISOString();
   loadJobSourcesConfig();
@@ -408,6 +425,7 @@ export async function runScanPipeline(
     pollStateUpdates,
     hadSuccessfulSourceFetch,
     outcome,
+    dedupeSummary,
   } = await fetchAllBoardPostings({
     policy,
     fetchedAt,
@@ -428,6 +446,7 @@ export async function runScanPipeline(
     pollStateUpdates,
     hadSuccessfulSourceFetch,
     outcome,
+    dedupeSummary,
   };
 }
 

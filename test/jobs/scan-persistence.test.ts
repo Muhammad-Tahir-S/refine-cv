@@ -92,6 +92,7 @@ function emptyPipeline(posting: JobPosting) {
     fetchErrors: [],
     sourceStats: [],
     blocklistExcluded: 0,
+    dedupeSummary: { inputCount: 1, outputCount: 1, mergedCount: 0 },
     pollStateUpdates: [],
     hadSuccessfulSourceFetch: true,
     outcome: {

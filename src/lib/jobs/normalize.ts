@@ -2,8 +2,8 @@ import {
   inferLevelFromFields,
   inferRemoteScopeFromFields,
 } from "./filter.js";
-import { makeDedupeKeyFromPosting, makeLegacyDedupeKey } from "./dedupe.js";
-import type { JobPosting, RawPosting } from "./types.js";
+import { computeIdentity } from "./identity.js";
+import type { JobPosting, JobProvenance, JobSourceId, RawPosting } from "./types.js";
 
 const HTML_ENTITY_MAP: Record<string, string> = {
   amp: "&",
@@ -13,6 +13,12 @@ const HTML_ENTITY_MAP: Record<string, string> = {
   apos: "'",
   nbsp: " ",
 };
+
+export interface NormalizeContext {
+  configuredSourceId: string;
+  adapterId: JobSourceId;
+  fetchedAt: string;
+}
 
 export function decodeHtmlEntities(value: string): string {
   return value
@@ -44,18 +50,45 @@ export function cleanTitle(title: string): string {
   return decodeHtmlEntities(title).replace(/\s+/g, " ").trim();
 }
 
-export function normalizeRawPosting(raw: RawPosting, fetchedAt: string): JobPosting {
+function resolveNormalizeContext(
+  raw: RawPosting,
+  contextOrFetchedAt: NormalizeContext | string,
+): NormalizeContext {
+  if (typeof contextOrFetchedAt === "string") {
+    return {
+      configuredSourceId: raw.sourceId,
+      adapterId: raw.sourceId,
+      fetchedAt: contextOrFetchedAt,
+    };
+  }
+  return contextOrFetchedAt;
+}
+
+export function normalizeRawPosting(
+  raw: RawPosting,
+  contextOrFetchedAt: NormalizeContext | string,
+): JobPosting {
+  const context = resolveNormalizeContext(raw, contextOrFetchedAt);
   const company = cleanCompanyName(raw.company);
   const title = cleanTitle(raw.title);
   const description = stripHtml(raw.description);
   const location = decodeHtmlEntities(raw.location).trim();
-  const dedupeKey = makeDedupeKeyFromPosting({
-    sourceId: raw.sourceId,
-    sourceJobId: raw.sourceJobId,
+  const identity = computeIdentity({
+    adapterId: context.adapterId,
+    providerSourceJobId: raw.sourceJobId,
     company,
     title,
     url: raw.url,
   });
+  const provenance: JobProvenance[] = [
+    {
+      configuredSourceId: context.configuredSourceId,
+      adapterId: context.adapterId,
+      providerSourceJobId: raw.sourceJobId,
+      originalUrl: raw.url,
+      fetchedAt: context.fetchedAt,
+    },
+  ];
 
   return {
     company,
@@ -66,12 +99,66 @@ export function normalizeRawPosting(raw: RawPosting, fetchedAt: string): JobPost
     remoteScope: inferRemoteScopeFromFields(location, description),
     level: inferLevelFromFields(title, description),
     description,
-    source: raw.sourceId,
+    source: context.adapterId,
+    configuredSourceIds: [context.configuredSourceId],
+    provenance,
     sourceJobId: raw.sourceJobId,
     postedAt: raw.postedAt,
     attribution: raw.attribution,
+    fetchedAt: context.fetchedAt,
+    dedupeKey: identity.dedupeKey,
+    legacyDedupeKey: identity.legacyDedupeKey,
+    legacyUrlDedupeKey: identity.legacyUrlDedupeKey,
+    identityAliases: identity.identityAliases,
+  };
+}
+
+export function makeTestPosting(
+  overrides: Partial<JobPosting> & Pick<JobPosting, "company" | "title" | "url">,
+): JobPosting {
+  const fetchedAt = overrides.fetchedAt ?? "2026-07-18T12:00:00.000Z";
+  const adapterId = overrides.source ?? "jobicy";
+  const configuredSourceId =
+    overrides.configuredSourceIds?.[0] ?? overrides.provenance?.[0]?.configuredSourceId ?? adapterId;
+  const provenance =
+    overrides.provenance ??
+    ([
+      {
+        configuredSourceId,
+        adapterId,
+        providerSourceJobId: overrides.sourceJobId,
+        originalUrl: overrides.url,
+        fetchedAt,
+      },
+    ] satisfies JobProvenance[]);
+  const identity = computeIdentity({
+    adapterId,
+    providerSourceJobId: overrides.sourceJobId ?? provenance[0]?.providerSourceJobId,
+    company: overrides.company,
+    title: overrides.title,
+    url: overrides.url,
+  });
+
+  return {
+    location: overrides.location ?? "Worldwide",
+    remoteScope: overrides.remoteScope ?? "global",
+    level: overrides.level ?? "senior",
+    description: overrides.description ?? "React role",
+    listingUrl: overrides.listingUrl ?? overrides.url,
+    source: adapterId,
+    sourceJobId: overrides.sourceJobId,
+    postedAt: overrides.postedAt,
+    attribution: overrides.attribution,
+    geoEligibility: overrides.geoEligibility,
     fetchedAt,
-    dedupeKey,
-    legacyDedupeKey: makeLegacyDedupeKey(company, title),
+    company: overrides.company,
+    title: overrides.title,
+    url: overrides.url,
+    configuredSourceIds: overrides.configuredSourceIds ?? [configuredSourceId],
+    provenance,
+    dedupeKey: overrides.dedupeKey ?? identity.dedupeKey,
+    legacyDedupeKey: overrides.legacyDedupeKey ?? identity.legacyDedupeKey,
+    legacyUrlDedupeKey: overrides.legacyUrlDedupeKey ?? identity.legacyUrlDedupeKey,
+    identityAliases: overrides.identityAliases ?? identity.identityAliases,
   };
 }

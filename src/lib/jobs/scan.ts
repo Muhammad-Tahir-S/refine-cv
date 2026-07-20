@@ -172,6 +172,7 @@ export async function runJobScan(
       lifecycleSuppressed,
       excluded: pipeline.excluded,
       blocklistExcluded: pipeline.blocklistExcluded,
+      dedupeSummary: pipeline.dedupeSummary,
       fetchErrors: pipeline.fetchErrors,
       sourceStats: pipeline.sourceStats,
       outcome: pipeline.outcome,

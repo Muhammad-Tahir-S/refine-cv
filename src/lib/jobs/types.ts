@@ -17,6 +17,19 @@ export type GeoEligibility = "nigeria_eligible" | "verify_geo" | "likely_exclude
 
 export type LevelHint = "junior" | "mid" | "senior" | "staff_lead" | "unknown";
 
+export interface JobProvenance {
+  configuredSourceId: string;
+  adapterId: JobSourceId;
+  providerSourceJobId?: string;
+  originalUrl: string;
+  fetchedAt: string;
+}
+
+export interface DedupeSummary {
+  inputCount: number;
+  outputCount: number;
+  mergedCount: number;
+}
 
 export interface JobPosting {
   company: string;
@@ -28,13 +41,18 @@ export interface JobPosting {
   geoEligibility?: GeoEligibility;
   level: LevelHint;
   description: string;
+  /** Primary adapter for the merged posting (backward compatibility). */
   source: JobSourceId;
+  configuredSourceIds: string[];
+  provenance: JobProvenance[];
   sourceJobId?: string;
   postedAt?: string;
   attribution?: string;
   fetchedAt: string;
   dedupeKey: string;
   legacyDedupeKey: string;
+  legacyUrlDedupeKey?: string;
+  identityAliases: string[];
 }
 
 export interface RawPosting {
@@ -194,6 +212,7 @@ export interface ScanRunResult {
   lifecycleSuppressed: LifecycleSuppressedCounts;
   excluded: Array<{ posting: JobPosting; reason: string }>;
   blocklistExcluded: number;
+  dedupeSummary: DedupeSummary;
   fetchErrors: SourceFetchError[];
   sourceStats: SourceStats[];
   outcome: ScanRunOutcome;

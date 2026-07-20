@@ -353,6 +353,7 @@ describe("runJobScan poll-state durability", () => {
             },
           ],
           blocklistExcluded: 0,
+          dedupeSummary: { inputCount: 0, outputCount: 0, mergedCount: 0 },
           pollStateUpdates: [
             {
               sourceId: "jobicy",

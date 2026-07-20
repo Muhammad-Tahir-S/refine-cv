@@ -336,6 +336,7 @@ describe("report policy agreement", () => {
       lifecycleSuppressed: { applied: 0, dismissed: 0, expired: 0 },
       excluded: [],
       blocklistExcluded: 0,
+      dedupeSummary: { inputCount: 0, outputCount: 0, mergedCount: 0 },
       fetchErrors: [],
       sourceStats: [],
       outcome: {

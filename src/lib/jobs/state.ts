@@ -3,9 +3,9 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { z } from "zod";
 import {
-  canonicalizeUrl,
   findInStateMap,
   makeLegacyDedupeKey,
+  makeLegacyUrlDedupeKey,
 } from "./dedupe.js";
 import { atomicWriteJson, loadPersistedState } from "./persistence.js";
 import { listCompletedJobScanDirs } from "./scan-run.js";
@@ -285,6 +285,8 @@ export function updateScanState(
       {
         dedupeKey: entry.dedupeKey,
         legacyDedupeKey,
+        legacyUrlDedupeKey: makeLegacyUrlDedupeKey(entry.url),
+        identityAliases: lifecycleKeys(entry),
       },
       seen,
     );
@@ -307,7 +309,10 @@ export function updateScanState(
 }
 
 export function lookupLifecycleDisposition(
-  posting: Pick<JobPosting, "dedupeKey" | "legacyDedupeKey">,
+  posting: Pick<
+    JobPosting,
+    "dedupeKey" | "legacyDedupeKey" | "legacyUrlDedupeKey" | "identityAliases"
+  >,
   lifecycle: JobLifecycleState,
 ): JobLifecycleDisposition | null {
   if (findInStateMap(posting, lifecycle.applied)) {
@@ -330,11 +335,11 @@ type LifecycleTransitionEntry =
 function lifecycleKeys(
   entry: Pick<LifecycleTransitionEntry, "dedupeKey" | "company" | "title" | "url">,
 ): string[] {
-  const canonicalUrl = canonicalizeUrl(entry.url);
+  const legacyUrl = makeLegacyUrlDedupeKey(entry.url);
   return [
     entry.dedupeKey,
     makeLegacyDedupeKey(entry.company, entry.title),
-    ...(canonicalUrl.startsWith("http") ? [`url::${canonicalUrl}`] : []),
+    ...(legacyUrl ? [legacyUrl] : []),
   ].filter((key, index, keys) => keys.indexOf(key) === index);
 }
 
