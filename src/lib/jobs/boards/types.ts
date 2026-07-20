@@ -8,6 +8,8 @@ export interface BoardFetchResult {
   postings: RawPosting[];
   quarantined: number;
   quarantineDiagnostics?: QuarantineDiagnostics;
+  requestUrls: string[];
+  /** @deprecated Adapters should populate requestUrls. */
   requestUrl?: string;
   attribution?: string;
 }

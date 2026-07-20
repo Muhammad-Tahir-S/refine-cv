@@ -78,6 +78,11 @@ export interface SerializedScanPolicy {
   blocklistCount: number;
 }
 
+export interface ScanPolicySnapshot {
+  policy: ScanPolicy;
+  rawContent: string;
+}
+
 export function resolveScanConfigPath(input?: string): string {
   if (!input) {
     return paths.jobSearchConfig;
@@ -153,12 +158,26 @@ export function loadAndCompileScanPolicy(options: {
   configPath?: string;
   profileOverride?: RoleProfile;
 } = {}): ScanPolicy {
+  return loadAndCompileScanPolicySnapshot(options).policy;
+}
+
+export function loadAndCompileScanPolicySnapshot(options: {
+  configPath?: string;
+  profileOverride?: RoleProfile;
+} = {}): ScanPolicySnapshot {
   const configPath = resolveScanConfigPath(options.configPath);
-  const config = loadJobSearchConfigAt(configPath);
-  return compileScanPolicy(config, {
-    configPath,
-    profileOverride: options.profileOverride,
-  });
+  if (!existsSync(configPath)) {
+    throw new Error(`Missing job search config: ${configPath}`);
+  }
+  const rawContent = readFileSync(configPath, "utf8");
+  const config = JobSearchConfigSchema.parse(JSON.parse(rawContent));
+  return {
+    policy: compileScanPolicy(config, {
+      configPath,
+      profileOverride: options.profileOverride,
+    }),
+    rawContent,
+  };
 }
 
 export function serializeScanPolicy(policy: ScanPolicy): SerializedScanPolicy {

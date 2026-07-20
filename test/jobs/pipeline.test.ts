@@ -13,11 +13,10 @@ import { filterPostings } from "../../src/lib/jobs/filter.ts";
 import { decodeHtmlEntities, normalizeRawPosting } from "../../src/lib/jobs/normalize.ts";
 import { renderScanReport } from "../../src/lib/jobs/report.ts";
 import { loadAndCompileScanPolicy, serializeScanPolicy } from "../../src/lib/jobs/scan-policy.ts";
-import type { JobPosting, ScanRunResult } from "../../src/lib/jobs/types.ts";
+import type { JobPosting } from "../../src/lib/jobs/types.ts";
 import { paths } from "../../src/lib/paths.ts";
 import { partitionScanResults } from "../../src/lib/jobs/pipeline.ts";
-
-const emptyDedupeSummary = { inputCount: 0, outputCount: 0, mergedCount: 0 };
+import { makeScanRunResult } from "./helpers/scan-result-fixture.js";
 
 describe("dedupe", () => {
   it("prefers canonical URL keys and strips utm tracking params", () => {
@@ -166,30 +165,12 @@ describe("report", () => {
     );
     posting.geoEligibility = "nigeria_eligible";
 
-    const result: ScanRunResult = {
-      scanDate: "18 July 2026",
-      outputDir: "/tmp/job-scan",
-      runId: "20260718T120000Z-react-frontend-abc123",
+    const result = makeScanRunResult({
       policy: serializeScanPolicy(policy),
       allMatched: [posting],
-      newJobs: [],
       previouslySeen: [posting],
-      lifecycleSuppressed: { applied: 0, dismissed: 0, expired: 0 },
-      excluded: [],
-      blocklistExcluded: 0,
-      dedupeSummary: emptyDedupeSummary,
-      fetchErrors: [],
-      sourceStats: [],
-      outcome: {
-        attemptedSources: 0,
-        skippedSources: 0,
-        succeededSources: 0,
-        failedSources: 0,
-        allSkippedDueToCadence: false,
-        totalSourceOutage: false,
-      },
-      hadSuccessfulSourceFetch: true,
-    };
+      policyMatched: 1,
+    });
 
     const markdown = renderScanReport(result);
     expect(markdown).toContain("All matched — Nigeria-eligible");

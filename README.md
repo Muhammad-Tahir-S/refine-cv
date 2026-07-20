@@ -303,7 +303,7 @@ pnpm scan-jobs
   → filter: React/FE, remote scope, seniority
   → dedupe vs profile-specific ~/.config/refine-cv/scan-state.json (v3)
   → sync applied checkboxes into lifecycle state (applied-jobs.json v2)
-  → publish jobs/{UTC}-{role-profile}-job-scan-{suffix}/report.md + raw.json (atomic staging rename)
+  → publish jobs/{UTC}-{role-profile}-job-scan-{suffix}/report.md + scan-result.json + manifest.json (atomic staging rename)
   → update jobs/.latest-{role-profile}-job-scan.json pointer
 
 Optional discovery:

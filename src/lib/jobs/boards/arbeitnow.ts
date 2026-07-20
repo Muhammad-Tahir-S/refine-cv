@@ -181,7 +181,7 @@ export const arbeitnowAdapter: JobBoardAdapter = {
       postings,
       quarantined,
       quarantineDiagnostics,
-      requestUrl: requestUrls.join(", "),
+      requestUrls,
       attribution: source.attribution,
     };
   },

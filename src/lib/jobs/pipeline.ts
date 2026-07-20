@@ -13,7 +13,7 @@ import {
   type SourcePollState,
   type SourcePollUpdate,
 } from "./source-poll-state.js";
-import { getEnabledSources, loadJobSourcesConfig } from "./sources/registry.js";
+import { getEnabledSources } from "./sources/registry.js";
 import type {
   DedupeSummary,
   JobPosting,
@@ -196,6 +196,7 @@ export async function fetchAllBoardPostings(
             fetched: 0,
             normalized: 0,
             quarantined: 0,
+            requestUrls: [],
             matched: 0,
             durationMs: 0,
             failed: false,
@@ -247,7 +248,9 @@ export async function fetchAllBoardPostings(
             normalized: normalized.length,
             quarantined: result.quarantined,
             quarantineDiagnostics: result.quarantineDiagnostics,
-            requestUrl: result.requestUrl,
+            requestUrls:
+              result.requestUrls ??
+              (result.requestUrl ? [result.requestUrl] : []),
             matched: 0,
             durationMs: now().getTime() - startedAt,
             attemptedAt,
@@ -275,6 +278,7 @@ export async function fetchAllBoardPostings(
             fetched: 0,
             normalized: 0,
             quarantined: 0,
+            requestUrls: [],
             matched: 0,
             durationMs: now().getTime() - startedAt,
             attemptedAt,
@@ -403,6 +407,7 @@ export interface RunScanPipelineOptions {
   forcePoll?: boolean;
   pollState?: SourcePollState;
   now?: () => Date;
+  sources?: JobSourceEntry[];
 }
 
 export async function runScanPipeline(
@@ -422,7 +427,6 @@ export async function runScanPipeline(
   dedupeSummary: DedupeSummary;
 }> {
   const fetchedAt = (options.now ?? (() => new Date()))().toISOString();
-  loadJobSourcesConfig();
   const {
     postings,
     fetchErrors,
@@ -434,6 +438,7 @@ export async function runScanPipeline(
     dedupeSummary,
   } = await fetchAllBoardPostings({
     policy,
+    sources: options.sources,
     fetchedAt,
     forcePoll: options.forcePoll,
     pollState: options.pollState,

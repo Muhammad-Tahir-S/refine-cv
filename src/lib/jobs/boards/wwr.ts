@@ -234,7 +234,7 @@ export const wwrAdapter: JobBoardAdapter = {
       postings,
       quarantined,
       quarantineDiagnostics,
-      requestUrl: requestUrls.join(", "),
+      requestUrls,
       attribution: source.attribution,
     };
   },

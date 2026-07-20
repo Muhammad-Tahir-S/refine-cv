@@ -79,11 +79,26 @@ export function parseJobSourcesConfig(input: unknown): JobSourcesConfig {
 }
 
 export function loadJobSourcesConfig(): JobSourcesConfig {
+  return loadJobSourcesConfigSnapshot().config;
+}
+
+export interface JobSourcesConfigSnapshot {
+  config: JobSourcesConfig;
+  rawContent: string;
+  configPath: string;
+}
+
+export function loadJobSourcesConfigSnapshot(): JobSourcesConfigSnapshot {
   const configPath = paths.jobSourcesConfig;
   if (!existsSync(configPath)) {
     throw new Error(`Missing job sources config: ${configPath}`);
   }
-  return parseJobSourcesConfig(JSON.parse(readFileSync(configPath, "utf8")));
+  const rawContent = readFileSync(configPath, "utf8");
+  return {
+    config: parseJobSourcesConfig(JSON.parse(rawContent)),
+    rawContent,
+    configPath,
+  };
 }
 
 export function getEnabledSources(config: JobSourcesConfig = loadJobSourcesConfig()): JobSourceEntry[] {

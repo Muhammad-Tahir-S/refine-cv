@@ -198,7 +198,7 @@ export const himalayasAdapter: JobBoardAdapter = {
       postings,
       quarantined,
       quarantineDiagnostics,
-      requestUrl: requestUrls.join(", "),
+      requestUrls,
       attribution: source.attribution,
     };
   },

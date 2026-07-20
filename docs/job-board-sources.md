@@ -49,4 +49,14 @@ Do not poll faster than each source's documented guidance. `config/job-sources.j
 
 When every enabled source is cadence-skipped, the report states that no fresh listing set was produced — it does not imply boards returned zero jobs. A run exits non-zero only when every **attempted** source fails (total source outage).
 
+Each completed run writes three artifacts under `jobs/{runId}-job-scan/`:
+
+| File | Purpose |
+|------|---------|
+| `report.md` | Human-readable tables, attribution, diagnostics |
+| `scan-result.json` | Processed run results (policy matches, exclusions, stats) |
+| `manifest.json` | Versioned run metadata: commit, config fingerprints, policy, per-source timings, quarantine, pipeline totals |
+
+Older runs may still contain `raw.json` (pre-Phase 8 name for processed results). New runs use `scan-result.json`.
+
 The scan runs enabled boards with bounded concurrency and continues if one source fails.

@@ -234,7 +234,7 @@ export const hnHiringAdapter: JobBoardAdapter = {
       postings,
       quarantined,
       quarantineDiagnostics,
-      requestUrl,
+      requestUrls: [requestUrl],
       attribution: source.attribution,
     };
   },

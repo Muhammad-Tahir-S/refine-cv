@@ -140,7 +140,7 @@ export const jobicyAdapter: JobBoardAdapter = {
       postings,
       quarantined,
       quarantineDiagnostics,
-      requestUrl,
+      requestUrls: [requestUrl],
       attribution: source.attribution,
     };
   },

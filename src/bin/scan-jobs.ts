@@ -52,7 +52,8 @@ program
       `  Lifecycle suppressed: applied=${result.lifecycleSuppressed.applied} dismissed=${result.lifecycleSuppressed.dismissed} expired=${result.lifecycleSuppressed.expired}`,
     );
     console.log(`  Blocklisted: ${result.blocklistExcluded}`);
-    console.log(`  Report: ${result.outputDir}/report.md`);
+    console.log(`  Report: ${result.runDirName}/${result.artifacts.report}`);
+    console.log(`  Manifest: ${result.runDirName}/${result.artifacts.manifest}`);
     if (result.fetchErrors.length > 0) {
       console.log(`  Fetch errors: ${result.fetchErrors.length}`);
     }

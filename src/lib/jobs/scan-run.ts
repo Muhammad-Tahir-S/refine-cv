@@ -6,8 +6,9 @@ import {
   renameSync,
   rmSync,
 } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { randomBytes } from "node:crypto";
+import { SCAN_ARTIFACT_NAMES } from "./artifact-names.js";
 import {
   atomicWriteFile,
   atomicWriteJson,
@@ -17,13 +18,28 @@ import type { RoleProfile } from "./role-profile.js";
 
 export const STAGING_DIR_PREFIX = ".staging-";
 
-export interface LatestRunPointer {
+export interface LatestRunPointerV1 {
   version: 1;
   runId: string;
   roleProfile: RoleProfile;
   outputDir: string;
   publishedAt: string;
 }
+
+export interface LatestRunPointerV2 {
+  version: 2;
+  runId: string;
+  roleProfile: RoleProfile;
+  runDirName: string;
+  artifacts: {
+    report: string;
+    scanResult: string;
+    manifest: string;
+  };
+  publishedAt: string;
+}
+
+export type LatestRunPointer = LatestRunPointerV1 | LatestRunPointerV2;
 
 export interface BuildScanRunIdOptions {
   now?: () => Date;
@@ -97,8 +113,9 @@ export interface PublishScanArtifactsInput {
   runId: string;
   finalOutputDir: string;
   stagingOutputDir: string;
-  rawJson: string;
+  scanResultJson: string;
   reportMarkdown: string;
+  manifestJson: string;
   publishedAt?: string;
   writeAtomicFile?: typeof atomicWriteFile;
   renameDir?: (from: string, to: string) => void;
@@ -124,10 +141,21 @@ export function publishScanArtifacts(input: PublishScanArtifactsInput): void {
   mkdirSync(input.stagingOutputDir, { recursive: true });
 
   try {
-    writeAtomicFile(join(input.stagingOutputDir, "raw.json"), input.rawJson, { backup: false });
-    writeAtomicFile(join(input.stagingOutputDir, "report.md"), input.reportMarkdown, {
-      backup: false,
-    });
+    writeAtomicFile(
+      join(input.stagingOutputDir, SCAN_ARTIFACT_NAMES.scanResult),
+      input.scanResultJson,
+      { backup: false },
+    );
+    writeAtomicFile(
+      join(input.stagingOutputDir, SCAN_ARTIFACT_NAMES.report),
+      input.reportMarkdown,
+      { backup: false },
+    );
+    writeAtomicFile(
+      join(input.stagingOutputDir, SCAN_ARTIFACT_NAMES.manifest),
+      input.manifestJson,
+      { backup: false },
+    );
     renameDir(input.stagingOutputDir, input.finalOutputDir);
     syncDirectory(input.jobsDir);
   } catch (error) {
@@ -141,17 +169,113 @@ export function publishScanArtifacts(input: PublishScanArtifactsInput): void {
 export function writeLatestRunPointer(
   jobsDir: string,
   profile: RoleProfile,
-  pointer: Omit<LatestRunPointer, "version" | "roleProfile">,
+  pointer: Omit<LatestRunPointerV2, "version" | "roleProfile" | "artifacts"> & {
+    runDirName: string;
+    artifacts?: LatestRunPointerV2["artifacts"];
+  },
   writeAtomic: typeof atomicWriteJson = atomicWriteJson,
 ): void {
-  const payload: LatestRunPointer = {
-    version: 1,
+  const payload: LatestRunPointerV2 = {
+    version: 2,
     roleProfile: profile,
     runId: pointer.runId,
-    outputDir: pointer.outputDir,
+    runDirName: pointer.runDirName,
+    artifacts: pointer.artifacts ?? {
+      report: SCAN_ARTIFACT_NAMES.report,
+      scanResult: SCAN_ARTIFACT_NAMES.scanResult,
+      manifest: SCAN_ARTIFACT_NAMES.manifest,
+    },
     publishedAt: pointer.publishedAt,
   };
+  if (!parseLatestRunPointer(payload, profile)) {
+    throw new Error("Refusing to write an invalid latest-run pointer.");
+  }
   writeAtomic(latestRunPointerPath(jobsDir, profile), payload, { backup: true });
+}
+
+function isValidTimestamp(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value) &&
+    Number.isFinite(Date.parse(value))
+  );
+}
+
+function isValidRunId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^\d{8}T\d{6}Z-(?:react-frontend|nodejs-backend)-[A-Za-z0-9]+$/.test(value)
+  );
+}
+
+function isSafeBasename(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value !== "." &&
+    value !== ".." &&
+    basename(value) === value
+  );
+}
+
+function hasValidRoleProfile(
+  value: unknown,
+  expectedProfile: RoleProfile,
+): value is RoleProfile {
+  return value === expectedProfile;
+}
+
+export function parseLatestRunPointer(
+  raw: unknown,
+  expectedProfile: RoleProfile,
+): LatestRunPointer | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+
+  const version = (raw as { version?: unknown }).version;
+  if (version === 2) {
+    const pointer = raw as LatestRunPointerV2;
+    if (
+      isValidRunId(pointer.runId) &&
+      isSafeBasename(pointer.runDirName) &&
+      pointer.runDirName === scanRunDirName(pointer.runId) &&
+      isJobScanDirName(pointer.runDirName) &&
+      hasValidRoleProfile(pointer.roleProfile, expectedProfile) &&
+      isValidTimestamp(pointer.publishedAt) &&
+      pointer.artifacts &&
+      isSafeBasename(pointer.artifacts.report) &&
+      isSafeBasename(pointer.artifacts.scanResult) &&
+      isSafeBasename(pointer.artifacts.manifest)
+    ) {
+      return pointer;
+    }
+    return null;
+  }
+
+  if (version === 1) {
+    const pointer = raw as LatestRunPointerV1;
+    const outputDirName =
+      typeof pointer.outputDir === "string" ? basename(pointer.outputDir) : "";
+    if (
+      isValidRunId(pointer.runId) &&
+      isJobScanDirName(outputDirName) &&
+      outputDirName === scanRunDirName(pointer.runId) &&
+      hasValidRoleProfile(pointer.roleProfile, expectedProfile) &&
+      isValidTimestamp(pointer.publishedAt)
+    ) {
+      return pointer;
+    }
+  }
+
+  return null;
+}
+
+export function resolveRunDirectory(jobsDir: string, pointer: LatestRunPointer): string {
+  if (pointer.version === 2) {
+    return join(jobsDir, pointer.runDirName);
+  }
+  return join(jobsDir, basename(pointer.outputDir));
 }
 
 export function readLatestRunPointer(
@@ -163,17 +287,14 @@ export function readLatestRunPointer(
     return null;
   }
 
-  const raw = JSON.parse(readFileSync(pointerPath, "utf8")) as unknown;
-  if (
-    raw &&
-    typeof raw === "object" &&
-    (raw as LatestRunPointer).version === 1 &&
-    typeof (raw as LatestRunPointer).outputDir === "string"
-  ) {
-    return raw as LatestRunPointer;
+  try {
+    return parseLatestRunPointer(
+      JSON.parse(readFileSync(pointerPath, "utf8")) as unknown,
+      profile,
+    );
+  } catch {
+    return null;
   }
-
-  return null;
 }
 
 export function listCompletedJobScanDirs(jobsDir: string): string[] {
@@ -194,7 +315,7 @@ export function listCompletedJobScanDirs(jobsDir: string): string[] {
         return true;
       }
 
-      const reportPath = join(jobsDir, entry.name, "report.md");
+      const reportPath = join(jobsDir, entry.name, SCAN_ARTIFACT_NAMES.report);
       if (!existsSync(reportPath)) {
         return false;
       }
@@ -215,9 +336,29 @@ export function resolveLinkedInDiscoveryOutputPath(
 
   const latest = readLatestRunPointer(jobsDir, profile);
   if (latest) {
-    return join(latest.outputDir, "linkedin-discovery.md");
+    return join(resolveRunDirectory(jobsDir, latest), "linkedin-discovery.md");
   }
 
   const { finalOutputDir } = resolveUniqueRunPaths(jobsDir, profile, options);
   return join(finalOutputDir, "linkedin-discovery.md");
 }
+
+export function migrateLatestRunPointerV1ToV2(
+  pointer: LatestRunPointerV1,
+): LatestRunPointerV2 {
+  return {
+    version: 2,
+    runId: pointer.runId,
+    roleProfile: pointer.roleProfile,
+    runDirName: basename(pointer.outputDir),
+    artifacts: {
+      report: SCAN_ARTIFACT_NAMES.report,
+      scanResult: SCAN_ARTIFACT_NAMES.scanResult,
+      manifest: SCAN_ARTIFACT_NAMES.manifest,
+    },
+    publishedAt: pointer.publishedAt,
+  };
+}
+
+/** @deprecated Legacy artifact name — use scan-result.json for new runs. */
+export const LEGACY_SCAN_RESULT_ARTIFACT = "raw.json";

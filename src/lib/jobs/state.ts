@@ -9,6 +9,8 @@ import {
 } from "./dedupe.js";
 import { atomicWriteJson, loadPersistedState } from "./persistence.js";
 import { listCompletedJobScanDirs } from "./scan-run.js";
+import { decodeHtmlEntities } from "./normalize.js";
+import { unescapeMarkdownInline } from "./markdown-safe.js";
 import type { RoleProfile } from "./role-profile.js";
 import type {
   AppliedJob,
@@ -456,8 +458,8 @@ export function parseAppliedCheckboxesFromReport(content: string, reportPath: st
   let match: RegExpExecArray | null;
 
   while ((match = linePattern.exec(content)) !== null) {
-    const company = match[2].trim();
-    const title = match[3].trim();
+    const company = decodeHtmlEntities(unescapeMarkdownInline(match[2].trim()));
+    const title = decodeHtmlEntities(unescapeMarkdownInline(match[3].trim()));
     const url = match[4].trim();
     const dedupeKey = makeLegacyDedupeKey(company, title);
     applied.push({

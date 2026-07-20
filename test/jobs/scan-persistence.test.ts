@@ -19,6 +19,8 @@ import {
   StateCorruptionError,
 } from "../../src/lib/jobs/persistence.ts";
 import { runJobScan } from "../../src/lib/jobs/scan.ts";
+import { sha256Hex } from "../../src/lib/jobs/manifest.ts";
+import { loadAndCompileScanPolicy } from "../../src/lib/jobs/scan-policy.ts";
 import { saveSourcePollState } from "../../src/lib/jobs/source-poll-state.ts";
 import {
   acquireScanLock,
@@ -35,6 +37,7 @@ import {
   stagingDirName,
   STAGING_DIR_PREFIX,
 } from "../../src/lib/jobs/scan-run.ts";
+import { SCAN_ARTIFACT_NAMES } from "../../src/lib/jobs/artifact-names.ts";
 import {
   loadJobLifecycleState,
   loadScanState,
@@ -202,13 +205,16 @@ describe("scan run directories", () => {
       runId,
       finalOutputDir,
       stagingOutputDir,
-      rawJson: '{"ok":true}\n',
+      scanResultJson: '{"ok":true}\n',
       reportMarkdown: "# report\n",
+      manifestJson: '{"schemaVersion":1}\n',
       syncDirectory: (path) => synced.push(path),
     });
 
     expect(existsSync(finalOutputDir)).toBe(true);
-    expect(existsSync(join(finalOutputDir, "report.md"))).toBe(true);
+    expect(existsSync(join(finalOutputDir, SCAN_ARTIFACT_NAMES.report))).toBe(true);
+    expect(existsSync(join(finalOutputDir, SCAN_ARTIFACT_NAMES.scanResult))).toBe(true);
+    expect(existsSync(join(finalOutputDir, SCAN_ARTIFACT_NAMES.manifest))).toBe(true);
     expect(existsSync(stagingOutputDir)).toBe(false);
     expect(synced).toEqual([dir]);
 
@@ -218,8 +224,9 @@ describe("scan run directories", () => {
         runId: `${runId}-retry`,
         finalOutputDir: join(dir, scanRunDirName(`${runId}-retry`)),
         stagingOutputDir: join(dir, stagingDirName(`${runId}-retry`)),
-        rawJson: "{}",
+        scanResultJson: "{}",
         reportMarkdown: "# report\n",
+        manifestJson: '{"schemaVersion":1}\n',
         writeAtomicFile: () => {
           throw new Error("write failed");
         },
@@ -250,6 +257,35 @@ describe("scan run directories", () => {
     });
 
     expect(second.runId).not.toBe(first.runId);
+  });
+
+  it("removes staging when manifest write fails after other artifacts", () => {
+    const dir = makeTempDir();
+    const runId = "20260720T100000Z-react-frontend-manifestfail";
+    const finalOutputDir = join(dir, scanRunDirName(runId));
+    const stagingOutputDir = join(dir, stagingDirName(runId));
+    let writes = 0;
+
+    expect(() =>
+      publishScanArtifacts({
+        jobsDir: dir,
+        runId,
+        finalOutputDir,
+        stagingOutputDir,
+        scanResultJson: '{"ok":true}\n',
+        reportMarkdown: "# report\n",
+        manifestJson: '{"schemaVersion":1}\n',
+        writeAtomicFile: (_path, _content) => {
+          writes += 1;
+          if (writes === 3) {
+            throw new Error("manifest write failed");
+          }
+        },
+      }),
+    ).toThrow("manifest write failed");
+
+    expect(existsSync(finalOutputDir)).toBe(false);
+    expect(existsSync(stagingOutputDir)).toBe(false);
   });
 });
 
@@ -421,6 +457,80 @@ describe("scan lock", () => {
 });
 
 describe("runJobScan durability ordering", () => {
+  it("uses one coherent config snapshot for fetch, catalog, and manifest", async () => {
+    const root = makeTempDir();
+    const jobsDir = join(root, "jobs");
+    const scanStatePath = join(root, "scan-state.json");
+    const lifecycleStatePath = join(root, "applied-jobs.json");
+    const sourcePollStatePath = join(root, "source-poll-state.json");
+    const lockPath = join(root, "job-scan.lock");
+    const posting = samplePosting();
+    const policy = loadAndCompileScanPolicy({ configPath: paths.jobSearchConfig });
+    const policyBytes = '{"snapshot":"job-search-v1"}\n';
+    const sourceBytes = '{"snapshot":"job-sources-v1"}\n';
+    const source = {
+      id: "snapshot-jobicy",
+      adapter: "jobicy" as const,
+      enabled: true,
+      minPollHours: 6,
+      attribution: "Jobs via snapshot Jobicy",
+      tag: "react",
+    };
+    let policyLoads = 0;
+    let sourceLoads = 0;
+    let publishedManifest: Record<string, unknown> | undefined;
+
+    await runJobScan({
+      paths: {
+        jobsDir,
+        scanStatePath,
+        lifecycleStatePath,
+        sourcePollStatePath,
+        lockPath,
+      },
+      clock: fixedClock("2026-07-20T10:00:00.000Z", "snap01"),
+      loadPolicySnapshot: () => {
+        policyLoads += 1;
+        return { policy, rawContent: policyBytes };
+      },
+      loadSourceConfigSnapshot: () => {
+        sourceLoads += 1;
+        return {
+          config: { version: 7, attribution: "snapshot", sources: [source] },
+          rawContent: sourceBytes,
+          configPath: paths.jobSourcesConfig,
+        };
+      },
+      runPipeline: async (_policy, options) => {
+        expect(options.sources).toEqual([source]);
+        return emptyPipeline(posting);
+      },
+      metadataReader: {
+        readApplicationVersion: () => "test",
+        readGitCommit: () => "abcdef1",
+        readJobSearchConfig: () => {
+          throw new Error("must not reread job-search config");
+        },
+        readJobSourcesConfig: () => {
+          throw new Error("must not reread job-sources config");
+        },
+      },
+      publishArtifacts: (input) => {
+        publishedManifest = JSON.parse(input.manifestJson) as Record<string, unknown>;
+      },
+    });
+
+    expect(policyLoads).toBe(1);
+    expect(sourceLoads).toBe(1);
+    const configs = publishedManifest?.configs as {
+      jobSearch: { sha256: string };
+      jobSources: { sha256: string };
+    };
+    expect(configs.jobSearch.sha256).toBe(sha256Hex(policyBytes));
+    expect(configs.jobSources.sha256).toBe(sha256Hex(sourceBytes));
+    expect(publishedManifest?.sourceConfigVersion).toBe(7);
+  });
+
   it("does not advance seen/lifecycle state when artifact publication fails", async () => {
     const root = makeTempDir();
     const jobsDir = join(root, "jobs");

@@ -146,7 +146,7 @@ export const remotiveAdapter: JobBoardAdapter = {
       postings,
       quarantined,
       quarantineDiagnostics,
-      requestUrl,
+      requestUrls: [requestUrl],
       attribution: source.attribution,
     };
   },

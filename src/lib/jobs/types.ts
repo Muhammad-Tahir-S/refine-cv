@@ -209,6 +209,8 @@ export interface SourceStats {
   normalized: number;
   quarantined: number;
   quarantineDiagnostics?: QuarantineDiagnostics;
+  requestUrls: string[];
+  /** @deprecated Read requestUrls instead. */
   requestUrl?: string;
   matched: number;
   durationMs: number;
@@ -227,23 +229,46 @@ export interface ScanRunOutcome {
   totalSourceOutage: boolean;
 }
 
+export interface SourceCatalogEntry {
+  configuredSourceId: string;
+  adapter: JobSourceId;
+  boardName: string;
+  attribution: string;
+  minPollHours: number;
+}
 
 export interface ScanRunResult {
   scanDate: string;
+  /** Absolute path to the published run directory (runtime only; omitted from scan-result.json). */
   outputDir: string;
+  /** Repository-relative run folder name, e.g. `{runId}-job-scan`. */
+  runDirName: string;
   runId: string;
+  startedAt: string;
+  completedAt: string;
+  durationMs: number;
   policy: SerializedScanPolicy;
+  /** Matches after policy filters, before lifecycle suppression. */
+  policyMatched: number;
   /** Active matches only — excludes applied, dismissed, and expired jobs */
   allMatched: JobPosting[];
   newJobs: JobPosting[];
   previouslySeen: JobPosting[];
   lifecycleSuppressed: LifecycleSuppressedCounts;
   excluded: Array<{ posting: JobPosting; reason: string }>;
+  exclusionsByReason: Record<string, number>;
   blocklistExcluded: number;
   dedupeSummary: DedupeSummary;
   fetchErrors: SourceFetchError[];
   sourceStats: SourceStats[];
+  sourceCatalog: SourceCatalogEntry[];
   outcome: ScanRunOutcome;
   /** False when every enabled source was cadence-skipped — no fresh board listings were fetched. */
   hadSuccessfulSourceFetch: boolean;
+  forcePoll: boolean;
+  artifacts: {
+    report: string;
+    scanResult: string;
+    manifest: string;
+  };
 }
