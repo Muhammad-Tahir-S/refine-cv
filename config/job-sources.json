@@ -10,7 +10,19 @@
       "worldwide": true,
       "maxPages": 3,
       "minPollHours": 24,
-      "attribution": "Jobs via Himalayas (https://himalayas.app/)"
+      "attribution": "Jobs via Himalayas (https://himalayas.app/)",
+      "profileOptions": {
+        "reactFrontend": {
+          "query": "react frontend",
+          "worldwide": true,
+          "maxPages": 3
+        },
+        "nodejsBackend": {
+          "query": "node backend",
+          "worldwide": true,
+          "maxPages": 3
+        }
+      }
     },
     {
       "id": "jobicy",
@@ -19,7 +31,17 @@
       "tag": "react",
       "count": 100,
       "minPollHours": 6,
-      "attribution": "Jobs via Jobicy (https://jobicy.com/)"
+      "attribution": "Jobs via Jobicy (https://jobicy.com/)",
+      "profileOptions": {
+        "reactFrontend": {
+          "tag": "react",
+          "count": 100
+        },
+        "nodejsBackend": {
+          "tag": "backend",
+          "count": 100
+        }
+      }
     },
     {
       "id": "remotive",
@@ -28,7 +50,17 @@
       "search": "frontend",
       "category": "software-dev",
       "minPollHours": 6,
-      "attribution": "Jobs via Remotive (https://remotive.com/)"
+      "attribution": "Jobs via Remotive (https://remotive.com/)",
+      "profileOptions": {
+        "reactFrontend": {
+          "search": "frontend",
+          "category": "software-dev"
+        },
+        "nodejsBackend": {
+          "search": "node",
+          "category": "software-dev"
+        }
+      }
     },
     {
       "id": "arbeitnow",
@@ -36,7 +68,15 @@
       "enabled": true,
       "maxPages": 3,
       "minPollHours": 24,
-      "attribution": "Jobs via Arbeitnow (https://www.arbeitnow.com/)"
+      "attribution": "Jobs via Arbeitnow (https://www.arbeitnow.com/)",
+      "profileOptions": {
+        "reactFrontend": {
+          "maxPages": 3
+        },
+        "nodejsBackend": {
+          "maxPages": 3
+        }
+      }
     },
     {
       "id": "remoteok",
@@ -44,7 +84,15 @@
       "enabled": true,
       "tags": "frontend,react,dev",
       "minPollHours": 24,
-      "attribution": "Jobs via Remote OK (https://remoteok.com/)"
+      "attribution": "Jobs via Remote OK (https://remoteok.com/)",
+      "profileOptions": {
+        "reactFrontend": {
+          "tags": "frontend,react,dev"
+        },
+        "nodejsBackend": {
+          "tags": "nodejs,backend,dev"
+        }
+      }
     },
     {
       "id": "wwr",
@@ -52,7 +100,15 @@
       "enabled": true,
       "feeds": ["programming", "front-end", "full-stack"],
       "minPollHours": 6,
-      "attribution": "Jobs via We Work Remotely (https://weworkremotely.com/)"
+      "attribution": "Jobs via We Work Remotely (https://weworkremotely.com/)",
+      "profileOptions": {
+        "reactFrontend": {
+          "feeds": ["programming", "front-end", "full-stack"]
+        },
+        "nodejsBackend": {
+          "feeds": ["programming", "back-end", "full-stack"]
+        }
+      }
     },
     {
       "id": "hn-hiring",

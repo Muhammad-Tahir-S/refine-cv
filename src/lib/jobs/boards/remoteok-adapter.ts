@@ -1,18 +1,28 @@
 import type { JobSourceEntry } from "../types.js";
 import { fetchRemoteOkRaw } from "./remoteok.js";
-import type { BoardFetchResult, JobBoardAdapter } from "./types.js";
+import type { BoardFetchContext, BoardFetchResult, JobBoardAdapter } from "./types.js";
 
 export const remoteokAdapter: JobBoardAdapter = {
   id: "remoteok",
-  async fetch(source: JobSourceEntry): Promise<BoardFetchResult> {
-    const { postings, quarantined } = await fetchRemoteOkRaw(source.attribution);
+  async fetch(source: JobSourceEntry, _context: BoardFetchContext): Promise<BoardFetchResult> {
+    const { postings, quarantined, quarantineDiagnostics, requestUrl } =
+      await fetchRemoteOkRaw(source);
     return {
       sourceId: source.id,
       adapter: source.adapter,
       postings,
       quarantined,
+      quarantineDiagnostics,
+      requestUrl,
+      attribution: source.attribution,
     };
   },
 };
 
-export { validateRemoteOkJob, remoteOkJobToPosting } from "./remoteok.js";
+export {
+  buildRemoteOkRequestUrl,
+  isRemoteOkMetadataRecord,
+  parseRemoteOkResponse,
+  remoteOkJobToPosting,
+  validateRemoteOkJob,
+} from "./remoteok.js";

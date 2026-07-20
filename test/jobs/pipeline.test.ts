@@ -74,7 +74,7 @@ describe("normalize", () => {
 });
 
 describe("remoteok validation", () => {
-  it("rejects city-like titles and spam descriptions", () => {
+  it("rejects known spam descriptions", () => {
     expect(
       validateRemoteOkJob({
         company: "Example Co",
@@ -86,12 +86,12 @@ describe("remoteok validation", () => {
     ).toBe(false);
   });
 
-  it("accepts plausible frontend roles", () => {
+  it("accepts plausible backend roles without adapter-side role filtering", () => {
     const validation = validateRemoteOkJob({
       company: "Example Co",
-      position: "Senior React Frontend Engineer",
+      position: "Senior Node.js Backend Engineer",
       description:
-        "Build React apps for a remote team worldwide. Strong TypeScript and Next.js required.",
+        "Build Node.js APIs for a remote team worldwide. Strong Express and PostgreSQL required.",
       location: "Remote",
       url: "https://remoteok.com/remote-jobs/2",
       epoch: Math.floor(Date.now() / 1000),
@@ -110,8 +110,8 @@ describe("remoteok validation", () => {
 });
 
 describe("hn hiring parser", () => {
-  it("extracts frontend comments conservatively", () => {
-    const posting = parseHnHiringComment(
+  it("extracts pipe-delimited hiring comments", () => {
+    const parsed = parseHnHiringComment(
       {
         id: 123,
         author: "startupco",
@@ -119,20 +119,20 @@ describe("hn hiring parser", () => {
       },
       "999",
     );
-    expect(posting?.company).toBe("StartupCo");
-    expect(posting?.title).toContain("React");
+    expect(parsed.posting?.company).toBe("StartupCo");
+    expect(parsed.posting?.title).toContain("React");
   });
 
-  it("skips non-frontend comments", () => {
-    const posting = parseHnHiringComment(
+  it("keeps non-frontend comments for shared filtering", () => {
+    const parsed = parseHnHiringComment(
       {
         id: 124,
         author: "startupco",
-        text: "We are hiring a sales manager in NYC.",
+        text: "We are hiring a sales manager in NYC with a long enough description to pass parsing.",
       },
       "999",
     );
-    expect(posting).toBeNull();
+    expect(parsed.posting?.title).toContain("sales manager");
   });
 });
 

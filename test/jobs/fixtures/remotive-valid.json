@@ -1,0 +1,18 @@
+{
+  "jobs": [
+    {
+      "id": 901,
+      "url": "https://remotive.com/remote-jobs/901",
+      "title": "Node.js Backend Engineer",
+      "company_name": "Acme",
+      "candidate_required_location": "Worldwide",
+      "publication_date": "2026-07-01",
+      "description": "<p>Node.js APIs.</p>"
+    },
+    {
+      "id": 902,
+      "title": "Missing URL",
+      "company_name": "Broken"
+    }
+  ]
+}

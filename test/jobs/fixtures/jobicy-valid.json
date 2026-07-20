@@ -1,0 +1,19 @@
+{
+  "jobs": [
+    {
+      "id": 501,
+      "url": "https://jobicy.com/jobs/501",
+      "jobTitle": "React Engineer",
+      "companyName": "Acme",
+      "jobGeo": "Worldwide",
+      "jobDescription": "<p>React role.</p>",
+      "pubDate": "2026-07-01"
+    },
+    {
+      "id": 502,
+      "url": "https://jobicy.com/jobs/502",
+      "jobTitle": "",
+      "companyName": "Broken"
+    }
+  ]
+}

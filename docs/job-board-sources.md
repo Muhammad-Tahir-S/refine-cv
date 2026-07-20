@@ -14,7 +14,7 @@ Board-first scanning uses only public APIs and RSS feeds configured in `config/j
 | We Work Remotely | Category RSS feeds | Every 4–6h | Credit WWR + apply via WWR URL |
 | HN Who is Hiring | Algolia HN API | Monthly (first weekday) | Link to HN thread/comment |
 
-Remote OK listings pass through extra validation because the feed contains malformed or stale records.
+Remote OK listings pass through structural validation because the feed contains malformed or stale records. Metadata/header rows are skipped before record validation.
 
 ## Excluded for now
 
@@ -32,6 +32,16 @@ These boards were evaluated but not integrated because terms forbid automation, 
 - Enable/disable boards in `config/job-sources.json`
 - Employer blocklist lives in `config/job-search.json` (`blocklist` array)
 - Search/geo criteria in `config/job-search.json` (default React/frontend) or `config/job-search-nodejs-backend.json` (Node.js/backend)
+- Per-board query options support `profileOptions.reactFrontend` and `profileOptions.nodejsBackend`. Top-level `query`, `tag`, `search`, `category`, `tags`, and `feeds` remain as backward-compatible defaults when profile-specific overrides are absent.
+- Remote OK sends multiple tags in its documented comma-separated form (for example, `?tags=nodejs,backend,dev`). WWR backend scans use its `back-end` category feed.
+- Unsupported adapter options fail at config load with an actionable error.
+
+## Adapter behavior
+
+- Adapters normalize board payloads into `RawPosting` records and quarantine malformed rows without failing the whole source.
+- Remote OK metadata/header objects (`legal`, metadata-only `last_updated`) are skipped; valid job rows are validated independently.
+- Role eligibility is enforced by the shared scan policy, not inside individual adapters.
+- Quarantine reason counts and bounded samples are retained on source stats for diagnostics.
 
 ## Polling guidance
 

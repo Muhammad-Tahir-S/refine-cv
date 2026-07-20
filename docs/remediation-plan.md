@@ -21,7 +21,7 @@ next phase begins.
 - [x] Phase 4: make persistence transactional
 - [x] Phase 5: harden HTTP and polling behavior
 - [x] Phase 6: repair identity, dedupe, and provenance
-- [ ] Phase 7: fix and optimize board adapters
+- [x] Phase 7: fix and optimize board adapters
 - [ ] Phase 8: improve reports and observability
 - [ ] Phase 9: repair GitHub evidence semantics
 - [ ] Phase 10: harden CV rendering

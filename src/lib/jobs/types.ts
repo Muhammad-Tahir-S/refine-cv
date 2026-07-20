@@ -68,12 +68,25 @@ export interface RawPosting {
   attribution?: string;
 }
 
+export interface ProfileSourceOptions {
+  query?: string;
+  worldwide?: boolean;
+  maxPages?: number;
+  tag?: string;
+  count?: number;
+  search?: string;
+  category?: string;
+  tags?: string;
+  feeds?: string[];
+}
+
 export interface JobSourceEntry {
   id: string;
   adapter: JobSourceId;
   enabled: boolean;
   minPollHours?: number;
   attribution?: string;
+  profileOptions?: Partial<Record<RoleProfile, ProfileSourceOptions>>;
   query?: string;
   worldwide?: boolean;
   maxPages?: number;
@@ -174,6 +187,19 @@ export interface SourceFetchError {
   retryable?: boolean;
 }
 
+export interface QuarantineSample {
+  index: number;
+  identifier?: string;
+  title?: string;
+}
+
+export interface QuarantineDiagnostics {
+  total: number;
+  byReason: Record<string, number>;
+  byCategory: Record<string, number>;
+  samples: QuarantineSample[];
+}
+
 export interface SourceStats {
   sourceId: string;
   adapter: string;
@@ -182,6 +208,8 @@ export interface SourceStats {
   fetched: number;
   normalized: number;
   quarantined: number;
+  quarantineDiagnostics?: QuarantineDiagnostics;
+  requestUrl?: string;
   matched: number;
   durationMs: number;
   attemptedAt?: string;

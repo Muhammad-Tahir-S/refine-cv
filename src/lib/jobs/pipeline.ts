@@ -5,6 +5,7 @@ import { filterPostings } from "./filter.js";
 import { dedupePostings } from "./merge.js";
 import { normalizeRawPosting } from "./normalize.js";
 import type { ScanPolicy } from "./scan-policy.js";
+import { resolveEffectiveSourceOptions } from "./sources/source-options.js";
 import {
   applySourcePollUpdates,
   loadSourcePollState,
@@ -205,7 +206,10 @@ export async function fetchAllBoardPostings(
       const startedAt = now().getTime();
       try {
         const adapter = getBoardAdapter(source.adapter);
-        const result = await adapter.fetch(source);
+        const effectiveSource = resolveEffectiveSourceOptions(source, policy.roleProfile);
+        const result = await adapter.fetch(effectiveSource, {
+          roleProfile: policy.roleProfile,
+        });
         const completedAt = now().toISOString();
         const normalized = result.postings.map((raw) =>
           normalizeRawPosting(raw, {
@@ -242,6 +246,8 @@ export async function fetchAllBoardPostings(
             fetched: result.postings.length,
             normalized: normalized.length,
             quarantined: result.quarantined,
+            quarantineDiagnostics: result.quarantineDiagnostics,
+            requestUrl: result.requestUrl,
             matched: 0,
             durationMs: now().getTime() - startedAt,
             attemptedAt,
