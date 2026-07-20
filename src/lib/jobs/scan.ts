@@ -36,13 +36,20 @@ export async function runJobScan(
   let scanState = loadScanState();
 
   const pipeline = await runScanPipeline(policy);
-  const { newJobs, previouslySeen, stateEntries } = partitionScanResults(
+  const {
+    activeMatched,
+    newJobs,
+    previouslySeen,
+    stateEntries,
+    lifecycleSuppressed,
+  } = partitionScanResults(
     pipeline.matched,
     scanState,
     appliedState,
+    policy.roleProfile,
   );
 
-  scanState = updateScanState(scanState, stateEntries);
+  scanState = updateScanState(scanState, policy.roleProfile, stateEntries);
   saveScanState(scanState);
 
   const scanDate = new Date().toLocaleDateString("en-GB", {
@@ -59,9 +66,10 @@ export async function runJobScan(
     scanDate,
     outputDir,
     policy: serializedPolicy,
-    allMatched: pipeline.matched,
+    allMatched: activeMatched,
     newJobs,
     previouslySeen,
+    lifecycleSuppressed,
     excluded: pipeline.excluded,
     blocklistExcluded: pipeline.blocklistExcluded,
     fetchErrors: pipeline.fetchErrors,

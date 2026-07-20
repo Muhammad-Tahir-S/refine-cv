@@ -15,6 +15,7 @@ import { renderScanReport } from "../../src/lib/jobs/report.ts";
 import { loadAndCompileScanPolicy, serializeScanPolicy } from "../../src/lib/jobs/scan-policy.ts";
 import type { JobPosting, ScanRunResult } from "../../src/lib/jobs/types.ts";
 import { paths } from "../../src/lib/paths.ts";
+import { partitionScanResults } from "../../src/lib/jobs/pipeline.ts";
 
 describe("dedupe", () => {
   it("prefers canonical URL keys", () => {
@@ -170,6 +171,7 @@ describe("report", () => {
       allMatched: [posting],
       newJobs: [],
       previouslySeen: [posting],
+      lifecycleSuppressed: { applied: 0, dismissed: 0, expired: 0 },
       excluded: [],
       blocklistExcluded: 0,
       fetchErrors: [],
@@ -182,6 +184,56 @@ describe("report", () => {
     expect(markdown).toContain("| Seen |");
     expect(markdown).toContain("this Markdown file");
     expect(markdown).toContain("Effective scan policy");
+  });
+});
+
+describe("partitionScanResults", () => {
+  it("isolates seen state by role profile", () => {
+    const posting = normalizeRawPosting(
+      {
+        sourceId: "jobicy",
+        sourceJobId: "1",
+        company: "Acme",
+        title: "Senior Frontend Engineer",
+        url: "https://example.com/jobs/1",
+        location: "Worldwide",
+        description: "React role",
+      },
+      "2026-07-18T00:00:00.000Z",
+    );
+
+    const seenOnlyInReact = {
+      version: 3 as const,
+      profiles: {
+        reactFrontend: {
+          [posting.dedupeKey]: {
+            dedupeKey: posting.dedupeKey,
+            company: posting.company,
+            title: posting.title,
+            url: posting.url,
+            firstSeenAt: "2026-07-01T00:00:00.000Z",
+            lastSeenAt: "2026-07-01T00:00:00.000Z",
+          },
+        },
+        nodejsBackend: {},
+      },
+    };
+
+    const reactResult = partitionScanResults(
+      [posting],
+      seenOnlyInReact,
+      { version: 2, applied: {}, dismissed: {}, expired: {} },
+      "reactFrontend",
+    );
+    const backendResult = partitionScanResults(
+      [posting],
+      seenOnlyInReact,
+      { version: 2, applied: {}, dismissed: {}, expired: {} },
+      "nodejsBackend",
+    );
+
+    expect(reactResult.previouslySeen).toHaveLength(1);
+    expect(backendResult.newJobs).toHaveLength(1);
   });
 });
 

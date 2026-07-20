@@ -55,6 +55,20 @@ export function makeDedupeKeyFromPosting(
   return makeLegacyDedupeKey(posting.company, posting.title);
 }
 
+export function findInStateMap<T>(
+  posting: Pick<JobPosting, "dedupeKey" | "legacyDedupeKey">,
+  map: Record<string, T>,
+): T | undefined {
+  const direct = map[posting.dedupeKey];
+  if (direct !== undefined) {
+    return direct;
+  }
+  if (posting.legacyDedupeKey) {
+    return map[posting.legacyDedupeKey];
+  }
+  return undefined;
+}
+
 export function isKnownInState(
   posting: Pick<JobPosting, "dedupeKey" | "legacyDedupeKey">,
   keys: Record<string, unknown>,

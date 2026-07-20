@@ -300,8 +300,8 @@ pnpm scan-jobs
   → fetch enabled boards in config/job-sources.json (Himalayas, Jobicy, Remotive, etc.)
   → apply employer blocklist from config/job-search.json
   → filter: React/FE, remote scope, seniority
-  → dedupe vs ~/.config/refine-cv/scan-state.json
-  → sync applied checkboxes from prior reports
+  → dedupe vs profile-specific ~/.config/refine-cv/scan-state.json (v3)
+  → sync applied checkboxes into lifecycle state (applied-jobs.json v2)
   → jobs/YYYY-MM-DD-job-scan/report.md + raw.json
 
 Optional discovery:
@@ -340,8 +340,8 @@ After applying:
 
 **State** (auto-created, outside repo)
 
-- `~/.config/refine-cv/scan-state.json` — seen job IDs
-- `~/.config/refine-cv/applied-jobs.json` — applied tracking
+- `~/.config/refine-cv/scan-state.json` — profile-aware seen job IDs (v3: `reactFrontend` / `nodejsBackend` maps)
+- `~/.config/refine-cv/applied-jobs.json` — job lifecycle state (v2: `applied`, `dismissed`, `expired`)
 
 **Side features**
 

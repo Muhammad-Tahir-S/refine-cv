@@ -33,6 +33,10 @@ program
     console.log(`  Config: ${result.policy.configLabel}`);
     console.log(`  Matched: ${result.allMatched.length}`);
     console.log(`  New: ${result.newJobs.length}`);
+    console.log(`  Previously seen: ${result.previouslySeen.length}`);
+    console.log(
+      `  Lifecycle suppressed: applied=${result.lifecycleSuppressed.applied} dismissed=${result.lifecycleSuppressed.dismissed} expired=${result.lifecycleSuppressed.expired}`,
+    );
     console.log(`  Blocklisted: ${result.blocklistExcluded}`);
     console.log(`  Report: ${result.outputDir}/report.md`);
     if (result.fetchErrors.length > 0) {

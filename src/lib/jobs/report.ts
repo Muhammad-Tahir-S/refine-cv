@@ -160,11 +160,14 @@ export function renderScanReport(result: ScanRunResult): string {
   const allVerifyGeo = result.allMatched.filter((job) => job.geoEligibility === "verify_geo");
 
   const stats = [
-    `| Total matched (after filters) | ${result.allMatched.length} |`,
+    `| Total matched (active, after filters) | ${result.allMatched.length} |`,
     `| — Nigeria-eligible | ${countByGeo(result.allMatched, "nigeria_eligible")} |`,
     `| — Verify geo | ${countByGeo(result.allMatched, "verify_geo")} |`,
     `| New this run | **${result.newJobs.length}** |`,
     `| Previously seen (still open) | ${result.previouslySeen.length} |`,
+    `| Applied (lifecycle suppressed) | ${result.lifecycleSuppressed.applied} |`,
+    `| Dismissed (lifecycle suppressed) | ${result.lifecycleSuppressed.dismissed} |`,
+    `| Expired (lifecycle suppressed) | ${result.lifecycleSuppressed.expired} |`,
     `| Excluded by filter | ${result.excluded.length} |`,
     `| Blocklisted employers | ${result.blocklistExcluded} |`,
     `| Source fetch errors | ${result.fetchErrors.length} |`,
@@ -214,7 +217,7 @@ ${policyJsonBlock(result)}
 1. Fetch enabled public job boards from \`config/job-sources.json\` (no login required).
 2. Normalize listings, apply employer blocklist from \`${policy.configLabel}\`.
 3. Filter for ${filterLabel} using the policy above.
-4. Dedupe against \`~/.config/refine-cv/scan-state.json\` and applied jobs from prior report checkboxes.
+4. Dedupe against profile-specific \`~/.config/refine-cv/scan-state.json\` entries and lifecycle state (\`applied\`, \`dismissed\`, \`expired\`) from prior report checkboxes.
 5. LinkedIn discovery remains optional (\`pnpm discover-linkedin\`) and separate from this scan.
 
 ---
@@ -277,7 +280,7 @@ ${excludedSample}
 
 ## New listings — mark applied
 
-Tick boxes after applying; the next \`pnpm scan-jobs\` run merges checked items into \`~/.config/refine-cv/applied-jobs.json\`.
+Tick boxes after applying; the next \`pnpm scan-jobs\` run merges checked items into \`~/.config/refine-cv/applied-jobs.json\` under the \`applied\` lifecycle map (v2 schema).
 
 ${appliedChecklist(result.newJobs)}
 

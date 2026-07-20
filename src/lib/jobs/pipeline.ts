@@ -1,5 +1,5 @@
 import { getBoardAdapter } from "./boards/index.js";
-import { isBlocklisted } from "./dedupe.js";
+import { findInStateMap, isBlocklisted, isKnownInState } from "./dedupe.js";
 import { filterPostings } from "./filter.js";
 import { normalizeRawPosting } from "./normalize.js";
 import type { ScanPolicy } from "./scan-policy.js";
@@ -7,13 +7,16 @@ import { getEnabledSources, loadJobSourcesConfig } from "./sources/registry.js";
 import type {
   JobPosting,
   JobSourceEntry,
+  JobLifecycleState,
+  LifecycleSuppressedCounts,
   ScanRunResult,
   ScanStateEntry,
   SourceFetchError,
   SourceStats,
 } from "./types.js";
-import { isKnownInState } from "./dedupe.js";
-import type { AppliedJobsState, ScanState } from "./types.js";
+import type { RoleProfile } from "./role-profile.js";
+import type { ScanState } from "./types.js";
+import { getProfileSeenMap, lookupLifecycleDisposition } from "./state.js";
 
 const MAX_CONCURRENT = 3;
 
@@ -111,33 +114,46 @@ export async function fetchAllBoardPostings(
 export function partitionScanResults(
   matched: JobPosting[],
   scanState: ScanState,
-  appliedState: AppliedJobsState,
+  lifecycleState: JobLifecycleState,
+  roleProfile: RoleProfile,
 ): {
+  activeMatched: JobPosting[];
   newJobs: JobPosting[];
   previouslySeen: JobPosting[];
   stateEntries: ScanStateEntry[];
+  lifecycleSuppressed: LifecycleSuppressedCounts;
 } {
+  const profileSeen = getProfileSeenMap(scanState, roleProfile);
   const newJobs: JobPosting[] = [];
   const previouslySeen: JobPosting[] = [];
+  const activeMatched: JobPosting[] = [];
   const stateEntries: ScanStateEntry[] = [];
+  const lifecycleSuppressed: LifecycleSuppressedCounts = {
+    applied: 0,
+    dismissed: 0,
+    expired: 0,
+  };
 
   for (const posting of matched) {
+    const existingSeen = findInStateMap(posting, profileSeen);
     stateEntries.push({
       dedupeKey: posting.dedupeKey,
       company: posting.company,
       title: posting.title,
       url: posting.url,
-      firstSeenAt: scanState.seen[posting.dedupeKey]?.firstSeenAt ?? posting.fetchedAt,
+      firstSeenAt: existingSeen?.firstSeenAt ?? posting.fetchedAt,
       lastSeenAt: posting.fetchedAt,
     });
 
-    const isApplied = isKnownInState(posting, appliedState.applied);
-    const wasSeen = isKnownInState(posting, scanState.seen);
-
-    if (isApplied) {
+    const disposition = lookupLifecycleDisposition(posting, lifecycleState);
+    if (disposition) {
+      lifecycleSuppressed[disposition] += 1;
       continue;
     }
 
+    activeMatched.push(posting);
+
+    const wasSeen = isKnownInState(posting, profileSeen);
     if (wasSeen) {
       previouslySeen.push(posting);
     } else {
@@ -145,7 +161,13 @@ export function partitionScanResults(
     }
   }
 
-  return { newJobs, previouslySeen, stateEntries };
+  return {
+    activeMatched,
+    newJobs,
+    previouslySeen,
+    stateEntries,
+    lifecycleSuppressed,
+  };
 }
 
 export function attachSourceMatchCounts(

@@ -332,6 +332,7 @@ describe("report policy agreement", () => {
       allMatched: [posting],
       newJobs: [posting],
       previouslySeen: [],
+      lifecycleSuppressed: { applied: 0, dismissed: 0, expired: 0 },
       excluded: [],
       blocklistExcluded: 0,
       fetchErrors: [],

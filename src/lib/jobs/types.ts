@@ -1,3 +1,4 @@
+import type { RoleProfile } from "./role-profile.js";
 import type { SerializedScanPolicy } from "./scan-policy.js";
 
 export type JobSourceId =
@@ -81,9 +82,14 @@ export interface ScanStateEntry {
   lastSeenAt: string;
 }
 
-export interface ScanState {
-  version: number;
+export interface ScanStateV2 {
+  version: 2;
   seen: Record<string, ScanStateEntry>;
+}
+
+export interface ScanState {
+  version: 3;
+  profiles: Record<RoleProfile, Record<string, ScanStateEntry>>;
 }
 
 export interface AppliedJob {
@@ -95,9 +101,48 @@ export interface AppliedJob {
   sourceReport?: string;
 }
 
+/** @deprecated Use JobLifecycleState — kept for v1 migration input typing */
 export interface AppliedJobsState {
-  version: number;
+  version: 1;
   applied: Record<string, AppliedJob>;
+}
+
+export interface DismissedJob {
+  dedupeKey: string;
+  company: string;
+  title: string;
+  url: string;
+  dismissedAt: string;
+  sourceReport?: string;
+}
+
+export interface ExpiredJob {
+  dedupeKey: string;
+  company: string;
+  title: string;
+  url: string;
+  expiredAt: string;
+  sourceReport?: string;
+}
+
+export type JobLifecycleDisposition = "applied" | "dismissed" | "expired";
+
+export interface JobLifecycleState {
+  version: 2;
+  applied: Record<string, AppliedJob>;
+  dismissed: Record<string, DismissedJob>;
+  expired: Record<string, ExpiredJob>;
+}
+
+export interface LifecycleSuppressedCounts {
+  applied: number;
+  dismissed: number;
+  expired: number;
+}
+
+export interface LinkedInDiscoveryState {
+  version: 1;
+  lastRunAt: string | null;
 }
 
 export interface SourceFetchError {
@@ -121,9 +166,11 @@ export interface ScanRunResult {
   scanDate: string;
   outputDir: string;
   policy: SerializedScanPolicy;
+  /** Active matches only — excludes applied, dismissed, and expired jobs */
   allMatched: JobPosting[];
   newJobs: JobPosting[];
   previouslySeen: JobPosting[];
+  lifecycleSuppressed: LifecycleSuppressedCounts;
   excluded: Array<{ posting: JobPosting; reason: string }>;
   blocklistExcluded: number;
   fetchErrors: SourceFetchError[];

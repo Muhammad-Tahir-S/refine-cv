@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { join } from "node:path";
 import { type BrowserContext, type Page, type Response } from "playwright";
@@ -16,8 +16,9 @@ import {
   resolveMaxPages,
 } from "./linkedin-options.js";
 import {
-  LINKEDIN_DISCOVERY_STATE_PATH,
   LINKEDIN_PROFILE_DIR,
+  loadLinkedInDiscoveryState,
+  saveLinkedInDiscoveryState,
 } from "./state.js";
 import {
   buildVoyagerDetailUrls,
@@ -66,10 +67,6 @@ export interface LinkedInDiscoveryResult {
   stats: LinkedInDiscoveryStats;
 }
 
-interface LinkedInDiscoveryState {
-  lastRunAt: string | null;
-}
-
 const LIST_SCROLL_SELECTOR =
   ".jobs-search-results-list, .scaffold-layout__list";
 const JOB_CARD_SELECTOR = ".job-card-container";
@@ -92,23 +89,6 @@ function sleep(ms: number): Promise<void> {
 function randomDelay(minMs: number, maxMs: number): Promise<void> {
   const ms = minMs + Math.floor(Math.random() * (maxMs - minMs + 1));
   return sleep(ms);
-}
-
-function loadDiscoveryState(): LinkedInDiscoveryState {
-  if (!existsSync(LINKEDIN_DISCOVERY_STATE_PATH)) {
-    return { lastRunAt: null };
-  }
-  return JSON.parse(
-    readFileSync(LINKEDIN_DISCOVERY_STATE_PATH, "utf8"),
-  ) as LinkedInDiscoveryState;
-}
-
-function saveDiscoveryState(state: LinkedInDiscoveryState): void {
-  mkdirSync(join(LINKEDIN_PROFILE_DIR, ".."), { recursive: true });
-  writeFileSync(
-    LINKEDIN_DISCOVERY_STATE_PATH,
-    `${JSON.stringify(state, null, 2)}\n`,
-  );
 }
 
 function createVoyagerSearchCapture(): {
@@ -405,7 +385,7 @@ export async function runLinkedInDiscovery(
   const blocklist = loadBlocklistAt(options.configPath);
 
   if (!skipDiscoveryState && !force) {
-    const prior = loadDiscoveryState();
+    const prior = loadLinkedInDiscoveryState();
     if (prior.lastRunAt) {
       const last = new Date(prior.lastRunAt).getTime();
       const hoursSince = (Date.now() - last) / (1000 * 60 * 60);
@@ -579,7 +559,10 @@ export async function runLinkedInDiscovery(
     writeFileSync(outputPath, `${lines.join("\n")}\n`);
 
     if (!skipDiscoveryState) {
-      saveDiscoveryState({ lastRunAt: new Date().toISOString() });
+      saveLinkedInDiscoveryState({
+        version: 1,
+        lastRunAt: new Date().toISOString(),
+      });
     }
 
     return { outputPath, hits: eligible, stats };
