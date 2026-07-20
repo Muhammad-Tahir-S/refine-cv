@@ -87,16 +87,27 @@ export const GEO_EXCLUSION_PATTERNS = [
   /\bon-?site\b/i,
 ];
 
-export function loadJobSearchConfig(): JobSearchConfig {
-  const configPath = jobSearchConfigOverride ?? paths.jobSearchConfig;
+export function loadJobSearchConfigAt(configPath: string): JobSearchConfig {
   if (!existsSync(configPath)) {
     throw new Error(`Missing job search config: ${configPath}`);
   }
-  return JobSearchConfigSchema.parse(JSON.parse(readFileSync(configPath, "utf8")));
+  return JobSearchConfigSchema.parse(
+    JSON.parse(readFileSync(configPath, "utf8")),
+  );
+}
+
+export function loadJobSearchConfig(): JobSearchConfig {
+  const configPath = jobSearchConfigOverride ?? paths.jobSearchConfig;
+  return loadJobSearchConfigAt(configPath);
+}
+
+export function loadBlocklistAt(configPath?: string): string[] {
+  const resolved = configPath ?? jobSearchConfigOverride ?? paths.jobSearchConfig;
+  return loadJobSearchConfigAt(resolved).blocklist;
 }
 
 export function loadBlocklist(): string[] {
-  return loadJobSearchConfig().blocklist;
+  return loadBlocklistAt();
 }
 
 export function postingHaystack(posting: Pick<JobPosting, "location" | "description">): string {

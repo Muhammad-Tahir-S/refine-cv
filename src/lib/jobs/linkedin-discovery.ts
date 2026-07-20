@@ -5,7 +5,15 @@ import { type BrowserContext, type Page, type Response } from "playwright";
 import { paths } from "../paths.js";
 import { launchChromeContext } from "./browser.js";
 import { isBlocklisted, normalizeCompanyName } from "./dedupe.js";
-import { loadBlocklist } from "./geo.js";
+import { loadBlocklistAt, type RoleProfile } from "./geo.js";
+import {
+  buildLinkedInSearchUrl,
+  filterByLinkedInRoleProfile,
+  LINKEDIN_DEFAULT_EXPERIENCE_LEVELS,
+  LINKEDIN_DEFAULT_KEYWORDS,
+  parseExperienceLevels,
+  resolveMaxPages,
+} from "./linkedin-options.js";
 import {
   LINKEDIN_DISCOVERY_STATE_PATH,
   LINKEDIN_PROFILE_DIR,
@@ -23,6 +31,12 @@ export interface LinkedInDiscoveryOptions {
   maxPages?: number;
   headed?: boolean;
   force?: boolean;
+  keywords?: string;
+  experienceLevels?: string;
+  configPath?: string;
+  outputPath?: string;
+  skipDiscoveryState?: boolean;
+  roleProfile?: RoleProfile;
 }
 
 export interface LinkedInDiscoveryHit {
@@ -59,16 +73,15 @@ const LIST_SCROLL_SELECTOR =
   ".jobs-search-results-list, .scaffold-layout__list";
 const JOB_CARD_SELECTOR = ".job-card-container";
 
-function buildSearchUrl(page: number): string {
-  const params = new URLSearchParams({
-    keywords: "react frontend",
-    geoId: "91000007",
-    f_TPR: "r604800",
-    f_E: "2,3,4",
-    f_WT: "2",
-    start: String((page - 1) * 25),
-  });
-  return `https://www.linkedin.com/jobs/search/?${params.toString()}`;
+function resolveOutputPath(explicit?: string): string {
+  if (explicit) {
+    return explicit;
+  }
+  return join(
+    paths.jobsDir,
+    `${new Date().toISOString().slice(0, 10)}-job-scan`,
+    "linkedin-discovery.md",
+  );
 }
 
 function sleep(ms: number): Promise<void> {
@@ -378,11 +391,19 @@ export async function runLinkedInLogin(): Promise<void> {
 export async function runLinkedInDiscovery(
   options: LinkedInDiscoveryOptions = {},
 ): Promise<LinkedInDiscoveryResult> {
-  const maxPages = options.maxPages ?? 3;
+  const maxPages = resolveMaxPages(options.maxPages ?? 3);
   const headed = options.headed ?? true;
   const force = options.force ?? false;
+  const skipDiscoveryState = options.skipDiscoveryState ?? false;
+  const keywords = options.keywords ?? LINKEDIN_DEFAULT_KEYWORDS;
+  const experienceLevels = parseExperienceLevels(
+    options.experienceLevels ?? LINKEDIN_DEFAULT_EXPERIENCE_LEVELS,
+  );
+  const roleProfile = options.roleProfile ?? "reactFrontend";
+  const outputPath = resolveOutputPath(options.outputPath);
+  const blocklist = loadBlocklistAt(options.configPath);
 
-  if (!force) {
+  if (!skipDiscoveryState && !force) {
     const prior = loadDiscoveryState();
     if (prior.lastRunAt) {
       const last = new Date(prior.lastRunAt).getTime();
@@ -399,22 +420,27 @@ export async function runLinkedInDiscovery(
 
   const context = await launchLinkedInContext(headed);
   const page = context.pages()[0] ?? (await context.newPage());
-  const allHits: LinkedInDiscoveryHit[] = [];
-  const seen = new Set<string>();
+  const collectedSearchHits: VoyagerSearchHit[] = [];
+  const seenJobIds = new Set<string>();
   let pagesScanned = 0;
-  let totalDetailFetches = 0;
   const perPageCounts: number[] = [];
-  const blocklist = loadBlocklist();
 
   try {
     for (let pageNum = 1; pageNum <= maxPages; pageNum += 1) {
       const capture = createVoyagerSearchCapture();
       page.on("response", capture.handler);
 
-      await page.goto(buildSearchUrl(pageNum), {
-        waitUntil: "domcontentloaded",
-        timeout: 45000,
-      });
+      await page.goto(
+        buildLinkedInSearchUrl({
+          page: pageNum,
+          keywords,
+          experienceLevels,
+        }),
+        {
+          waitUntil: "domcontentloaded",
+          timeout: 45000,
+        },
+      );
       await randomDelay(2000, 4000);
 
       if (await isLoginWall(page)) {
@@ -430,32 +456,43 @@ export async function runLinkedInDiscovery(
       perPageCounts.push(searchHits.length);
       pagesScanned += 1;
 
-      if (searchHits.length === 0) {
-        break;
+      for (const hit of searchHits) {
+        if (!seenJobIds.has(hit.jobId)) {
+          seenJobIds.add(hit.jobId);
+          collectedSearchHits.push(hit);
+        }
       }
 
-      const { hits: pageHits, detailFetches } = await enrichSearchHits(
-        page,
-        context,
-        searchHits,
-      );
-      totalDetailFetches += detailFetches;
-
-      for (const hit of pageHits) {
-        const key = `${normalizeCompanyName(hit.company)}::${hit.title}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          allHits.push(hit);
-        }
+      if (searchHits.length === 0) {
+        break;
       }
 
       await randomDelay(2500, 5000);
     }
 
-    if (allHits.length === 0) {
+    if (collectedSearchHits.length === 0) {
       throw new Error(
         "Extracted 0 jobs from LinkedIn Voyager/search. Session may have expired or API shape changed. Run `pnpm linkedin:login` and retry.",
       );
+    }
+
+    const roleFilteredSearchHits = filterByLinkedInRoleProfile(
+      collectedSearchHits,
+      roleProfile,
+    );
+
+    const { hits: enrichedHits, detailFetches: totalDetailFetches } =
+      await enrichSearchHits(page, context, roleFilteredSearchHits);
+
+    const allHits: LinkedInDiscoveryHit[] = [];
+    const seen = new Set<string>();
+
+    for (const hit of enrichedHits) {
+      const key = `${normalizeCompanyName(hit.company)}::${hit.title}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        allHits.push(hit);
+      }
     }
 
     const withExternal = allHits.filter((hit) => hit.externalApplyUrl);
@@ -470,8 +507,8 @@ export async function runLinkedInDiscovery(
     const stats: LinkedInDiscoveryStats = {
       pagesRequested: maxPages,
       pagesScanned,
-      rawHits: allHits.length,
-      enrichedHits: allHits.length,
+      rawHits: collectedSearchHits.length,
+      enrichedHits: roleFilteredSearchHits.length,
       withExternalApply: withExternal.length,
       easyApplyOnly: easyApplyOnly.length,
       eligibleJobs: eligible.length,
@@ -487,9 +524,13 @@ export async function runLinkedInDiscovery(
       "# LinkedIn discovery",
       "",
       `**Run date:** ${new Date().toISOString()}`,
+      `**Keywords:** ${keywords}`,
+      `**Experience (f_E):** ${experienceLevels}`,
+      `**Role profile:** ${roleProfile}`,
       `**Pages requested:** ${maxPages}`,
       `**Pages scanned:** ${pagesScanned}`,
-      `**Jobs extracted (Voyager + detail API):** ${allHits.length}`,
+      `**Jobs extracted (Voyager):** ${collectedSearchHits.length}`,
+      `**After role filter:** ${roleFilteredSearchHits.length}`,
       `**Detail API fetches:** ${totalDetailFetches}`,
       `**With external apply URL:** ${withExternal.length}`,
       `**Easy Apply only (skipped):** ${easyApplyOnly.length}`,
@@ -533,15 +574,12 @@ export async function runLinkedInDiscovery(
       }
     }
 
-    const outputPath = join(
-      paths.jobsDir,
-      `${new Date().toISOString().slice(0, 10)}-job-scan`,
-      "linkedin-discovery.md",
-    );
     mkdirSync(join(outputPath, ".."), { recursive: true });
     writeFileSync(outputPath, `${lines.join("\n")}\n`);
 
-    saveDiscoveryState({ lastRunAt: new Date().toISOString() });
+    if (!skipDiscoveryState) {
+      saveDiscoveryState({ lastRunAt: new Date().toISOString() });
+    }
 
     return { outputPath, hits: eligible, stats };
   } finally {

@@ -3,6 +3,11 @@ import { Command } from "commander";
 import { join } from "node:path";
 import { paths } from "../lib/paths.js";
 import { runLinkedInDiscovery } from "../lib/jobs/linkedin-discovery.js";
+import {
+  parseExperienceLevels,
+  parseRoleProfile,
+  resolveMaxPages,
+} from "../lib/jobs/linkedin-options.js";
 
 const program = new Command();
 
@@ -38,21 +43,19 @@ program
       role: string;
       isolated: boolean;
     }) => {
-      const maxPages = Number.parseInt(opts.pages, 10);
-      const today = new Date().toISOString().slice(0, 10);
+      const maxPages = resolveMaxPages(opts.pages);
       const outputPath = opts.slug
         ? join(paths.jobsDir, opts.slug, "linkedin-discovery.md")
         : undefined;
-
-      const roleProfile =
-        opts.role === "nodejsBackend" ? "nodejsBackend" : "reactFrontend";
+      const roleProfile = parseRoleProfile(opts.role);
+      const experienceLevels = parseExperienceLevels(opts.experience);
 
       const result = await runLinkedInDiscovery({
-        maxPages: Number.isFinite(maxPages) ? maxPages : 3,
+        maxPages,
         headed: !opts.headless,
         force: opts.force,
         keywords: opts.keywords,
-        experienceLevels: opts.experience,
+        experienceLevels,
         configPath: opts.config,
         outputPath,
         skipDiscoveryState: opts.isolated,
