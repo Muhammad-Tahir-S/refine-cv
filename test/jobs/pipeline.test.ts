@@ -167,6 +167,7 @@ describe("report", () => {
     const result: ScanRunResult = {
       scanDate: "18 July 2026",
       outputDir: "/tmp/job-scan",
+      runId: "20260718T120000Z-react-frontend-abc123",
       policy: serializeScanPolicy(policy),
       allMatched: [posting],
       newJobs: [],

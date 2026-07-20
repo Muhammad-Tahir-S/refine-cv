@@ -302,7 +302,8 @@ pnpm scan-jobs
   → filter: React/FE, remote scope, seniority
   → dedupe vs profile-specific ~/.config/refine-cv/scan-state.json (v3)
   → sync applied checkboxes into lifecycle state (applied-jobs.json v2)
-  → jobs/YYYY-MM-DD-job-scan/report.md + raw.json
+  → publish jobs/{UTC}-{role-profile}-job-scan-{suffix}/report.md + raw.json (atomic staging rename)
+  → update jobs/.latest-{role-profile}-job-scan.json pointer
 
 Optional discovery:
   pnpm linkedin:login        (once — manual sign-in in Chrome)
@@ -342,6 +343,8 @@ After applying:
 
 - `~/.config/refine-cv/scan-state.json` — profile-aware seen job IDs (v3: `reactFrontend` / `nodejsBackend` maps)
 - `~/.config/refine-cv/applied-jobs.json` — job lifecycle state (v2: `applied`, `dismissed`, `expired`)
+- `~/.config/refine-cv/job-scan.lock` — exclusive scan lock (auto-created; stale inactive locks are recovered)
+- `jobs/.latest-{role-profile}-job-scan.json` — pointer to the newest completed board scan for that profile
 
 **Side features**
 

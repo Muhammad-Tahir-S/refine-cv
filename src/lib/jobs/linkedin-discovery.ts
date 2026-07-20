@@ -1,10 +1,10 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { createInterface } from "node:readline";
-import { join } from "node:path";
 import { type BrowserContext, type Page, type Response } from "playwright";
 import { paths } from "../paths.js";
 import { launchChromeContext } from "./browser.js";
 import { isBlocklisted, normalizeCompanyName } from "./dedupe.js";
+import { atomicWriteFile } from "./persistence.js";
 import { loadBlocklistAt } from "./scan-policy.js";
 import type { RoleProfile } from "./role-profile.js";
 import {
@@ -15,6 +15,7 @@ import {
   parseExperienceLevels,
   resolveMaxPages,
 } from "./linkedin-options.js";
+import { resolveLinkedInDiscoveryOutputPath } from "./scan-run.js";
 import {
   LINKEDIN_PROFILE_DIR,
   loadLinkedInDiscoveryState,
@@ -71,15 +72,8 @@ const LIST_SCROLL_SELECTOR =
   ".jobs-search-results-list, .scaffold-layout__list";
 const JOB_CARD_SELECTOR = ".job-card-container";
 
-function resolveOutputPath(explicit?: string): string {
-  if (explicit) {
-    return explicit;
-  }
-  return join(
-    paths.jobsDir,
-    `${new Date().toISOString().slice(0, 10)}-job-scan`,
-    "linkedin-discovery.md",
-  );
+function resolveOutputPath(roleProfile: RoleProfile, explicit?: string): string {
+  return resolveLinkedInDiscoveryOutputPath(paths.jobsDir, roleProfile, explicit);
 }
 
 function sleep(ms: number): Promise<void> {
@@ -381,7 +375,7 @@ export async function runLinkedInDiscovery(
     options.experienceLevels ?? LINKEDIN_DEFAULT_EXPERIENCE_LEVELS,
   );
   const roleProfile = options.roleProfile ?? "reactFrontend";
-  const outputPath = resolveOutputPath(options.outputPath);
+  const outputPath = resolveOutputPath(roleProfile, options.outputPath);
   const blocklist = loadBlocklistAt(options.configPath);
 
   if (!skipDiscoveryState && !force) {
@@ -555,8 +549,7 @@ export async function runLinkedInDiscovery(
       }
     }
 
-    mkdirSync(join(outputPath, ".."), { recursive: true });
-    writeFileSync(outputPath, `${lines.join("\n")}\n`);
+    atomicWriteFile(outputPath, `${lines.join("\n")}\n`, { backup: true });
 
     if (!skipDiscoveryState) {
       saveLinkedInDiscoveryState({

@@ -18,7 +18,7 @@ next phase begins.
 - [x] Phase 1: restore build and LinkedIn CLI integrity
 - [x] Phase 2: introduce executable search policies
 - [x] Phase 3: separate profile and job lifecycle state
-- [ ] Phase 4: make persistence transactional
+- [x] Phase 4: make persistence transactional
 - [ ] Phase 5: harden HTTP and polling behavior
 - [ ] Phase 6: repair identity, dedupe, and provenance
 - [ ] Phase 7: fix and optimize board adapters

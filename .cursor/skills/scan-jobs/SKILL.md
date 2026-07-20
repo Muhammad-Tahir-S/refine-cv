@@ -35,7 +35,8 @@ This:
 3. Filters for React/frontend + Nigeria-focused geo eligibility (`src/lib/jobs/geo.ts`)
 4. Merges applied checkboxes from prior `jobs/*-job-scan/report.md` files
 5. Dedupes against scan state; reports **new** listings only
-6. Writes `jobs/YYYY-MM-DD-job-scan/report.md` and `raw.json`
+6. Writes `jobs/{UTC-timestamp}-{role-profile}-job-scan-{suffix}/report.md` and `raw.json` (staging → atomic publish; never overwrites prior runs)
+7. Updates `jobs/.latest-{role-profile}-job-scan.json` pointer to the newest completed run for that profile
 
 See `docs/job-board-sources.md` for source cadence and attribution rules.
 
@@ -64,7 +65,7 @@ LinkedIn discovery uses **Voyager API interception** (search) plus lightweight *
 
 If discovery reports **0 jobs extracted**, the session likely expired or Voyager API shape changed — re-run `pnpm linkedin:login`. Check `linkedin-discovery.md` for per-page counts and Easy Apply vs external apply split.
 
-Review `jobs/YYYY-MM-DD-job-scan/linkedin-discovery.md` for external-apply listings (blocklist filtered). This is separate from the main board scan.
+Review `jobs/*-job-scan/linkedin-discovery.md` (or the latest profile pointer target) for external-apply listings (blocklist filtered). This is separate from the main board scan.
 
 ### 4. Applied tracking
 

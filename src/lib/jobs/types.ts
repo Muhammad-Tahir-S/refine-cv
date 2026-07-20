@@ -165,6 +165,7 @@ export interface SourceStats {
 export interface ScanRunResult {
   scanDate: string;
   outputDir: string;
+  runId: string;
   policy: SerializedScanPolicy;
   /** Active matches only — excludes applied, dismissed, and expired jobs */
   allMatched: JobPosting[];

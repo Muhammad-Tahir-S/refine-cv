@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { z } from "zod";
@@ -7,6 +7,8 @@ import {
   findInStateMap,
   makeLegacyDedupeKey,
 } from "./dedupe.js";
+import { atomicWriteJson, loadPersistedState } from "./persistence.js";
+import { listCompletedJobScanDirs } from "./scan-run.js";
 import type { RoleProfile } from "./role-profile.js";
 import type {
   AppliedJob,
@@ -202,12 +204,11 @@ export function getProfileSeenMap(
 }
 
 export function loadScanState(statePath: string = SCAN_STATE_PATH): ScanState {
-  if (!existsSync(statePath)) {
-    return { version: 3, profiles: emptyProfileMaps() };
-  }
-
-  const raw = JSON.parse(readFileSync(statePath, "utf8"));
-  return migrateScanState(raw);
+  return loadPersistedState(
+    statePath,
+    migrateScanState,
+    () => ({ version: 3, profiles: emptyProfileMaps() }),
+  );
 }
 
 export function saveScanState(state: ScanState, statePath: string = SCAN_STATE_PATH): void {
@@ -215,18 +216,17 @@ export function saveScanState(state: ScanState, statePath: string = SCAN_STATE_P
     ensureConfigDir();
   }
   mkdirSync(dirname(statePath), { recursive: true });
-  writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`);
+  atomicWriteJson(statePath, state, { backup: true });
 }
 
 export function loadJobLifecycleState(
   statePath: string = APPLIED_JOBS_PATH,
 ): JobLifecycleState {
-  if (!existsSync(statePath)) {
-    return { version: 2, applied: {}, dismissed: {}, expired: {} };
-  }
-
-  const raw = JSON.parse(readFileSync(statePath, "utf8"));
-  return migrateJobLifecycleState(raw);
+  return loadPersistedState(
+    statePath,
+    migrateJobLifecycleState,
+    () => ({ version: 2, applied: {}, dismissed: {}, expired: {} }),
+  );
 }
 
 /** @deprecated Use loadJobLifecycleState */
@@ -243,7 +243,7 @@ export function saveJobLifecycleState(
     ensureConfigDir();
   }
   mkdirSync(dirname(statePath), { recursive: true });
-  writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`);
+  atomicWriteJson(statePath, state, { backup: true });
 }
 
 /** @deprecated Use saveJobLifecycleState */
@@ -478,9 +478,7 @@ export function mergeAppliedFromReports(
     return lifecycle;
   }
 
-  const scanDirs = readdirSync(jobsDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && entry.name.includes("job-scan"))
-    .map((entry) => join(jobsDir, entry.name));
+  const scanDirs = listCompletedJobScanDirs(jobsDir);
 
   for (const dir of scanDirs) {
     const reportPath = join(dir, "report.md");
@@ -509,12 +507,11 @@ export function saveMergedAppliedFromReports(
 export function loadLinkedInDiscoveryState(
   statePath: string = LINKEDIN_DISCOVERY_STATE_PATH,
 ): LinkedInDiscoveryState {
-  if (!existsSync(statePath)) {
-    return { version: 1, lastRunAt: null };
-  }
-
-  const raw = JSON.parse(readFileSync(statePath, "utf8"));
-  return migrateLinkedInDiscoveryState(raw);
+  return loadPersistedState(
+    statePath,
+    migrateLinkedInDiscoveryState,
+    () => ({ version: 1, lastRunAt: null }),
+  );
 }
 
 export function saveLinkedInDiscoveryState(
@@ -525,5 +522,5 @@ export function saveLinkedInDiscoveryState(
     ensureConfigDir();
   }
   mkdirSync(dirname(statePath), { recursive: true });
-  writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`);
+  atomicWriteJson(statePath, state, { backup: true });
 }
