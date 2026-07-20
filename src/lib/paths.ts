@@ -16,6 +16,7 @@ export const paths = {
   baseCvEnhanced: join(ROOT, "profile", "base-cv-enhanced.md"),
   questionnaire: join(ROOT, "profile", "questionnaire.md"),
   githubIndex: join(ROOT, "profile", "github-index.json"),
+  githubDelta: join(ROOT, "profile", "github-delta.json"),
   githubSummary: join(ROOT, "profile", "github-summary.md"),
   indexState: join(ROOT, "profile", "index-state.json"),
   refreshLog: join(ROOT, "profile", "refresh-log.md"),

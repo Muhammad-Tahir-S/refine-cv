@@ -368,8 +368,9 @@ First: complete onboarding index (feature 1)
 
 Weekly:
   /loop 7d /refresh-github-profile
-    → pnpm index-github (incremental since watermarks)
+    → pnpm index-github (incremental merge into v4 snapshot)
     → profile/github-index.json
+    → profile/github-delta.json
     → profile/github-summary.md
     → profile/refresh-log.md append
 
@@ -393,7 +394,8 @@ Manual anytime:
 
 **Side features**
 
-- `profile/index-state.json` — incremental watermarks
+- `profile/index-state.json` — incremental watermarks (advanced only after durable artifact writes)
+- `profile/github-delta.json` — explicit per-run added/updated commit SHAs and PR numbers
 - Review `needs-your-confirmation` bullets before adding to CV
 - See `docs/WEEKLY-REFRESH.md`
 

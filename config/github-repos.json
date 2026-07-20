@@ -29,5 +29,5 @@
   "includePullRequests": true,
   "indexOnlyMyCommits": true,
   "commitAuthorNames": ["Muhammad-Tahir Sanuth", "Muhammad-Tahir"],
-  "_comment": "metzinc/* with 0 personal-author commits: still listed for Tempo work history (org git identity). Removed femitubosun/next-template."
+  "_comment": "maxCommitsPerRepo/maxPullRequestsPerRepo 0 = full history per run. Incremental refreshes merge into profile/github-index.json v4; watermarks in profile/index-state.json advance only after durable writes. metzinc/* with 0 personal-author commits: still listed for Tempo work history (org git identity). Removed femitubosun/next-template."
 }

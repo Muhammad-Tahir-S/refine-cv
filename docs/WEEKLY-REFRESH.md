@@ -15,7 +15,7 @@ This should:
 1. Run `/refresh-github-profile` **once immediately**
 2. Re-run every **7 days** until you stop the loop
 
-The agent will run `pnpm index-github`, update `profile/github-index.json`, `profile/github-summary.md`, and append a row to `profile/refresh-log.md`.
+The agent will run `pnpm index-github`, update `profile/github-index.json`, `profile/github-delta.json`, `profile/github-summary.md`, and append a row to `profile/refresh-log.md`.
 
 ## Stop the loop
 
@@ -31,8 +31,9 @@ Or run `/refresh-github-profile` in chat anytime.
 
 ## What changes weekly
 
-- New commits since `profile/index-state.json` watermarks (`since=` API filter)
+- New commits merged into the durable snapshot (`github-index.json` v4), with explicit counts in `github-delta.json`
+- Incremental fetch uses watermark overlap plus SHA dedupe (see `index-state.json`)
 - New merged PR titles (if `includePullRequests` is true)
-- Updated `github-summary.md` theme tags and draft bullets
+- Updated `github-summary.md` theme tags and draft bullets (totals from full snapshot, not delta alone)
 
 Review `needs-your-confirmation` bullets before adding them to your CV.

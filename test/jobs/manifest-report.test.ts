@@ -453,8 +453,8 @@ describe("markdown escaping", () => {
     expect(checklist).not.toContain("user:pass");
     const parsed = parseAppliedCheckboxesFromReport(checklist, "report.md");
     expect(parsed).toHaveLength(1);
-    expect(parsed[0]?.company).toBe("Co — <b>bad</b>");
-    expect(parsed[0]?.title).toBe("Title — injected");
+    expect(parsed[0]?.company).toBe("Co &mdash; <b>bad</b>");
+    expect(parsed[0]?.title).toBe("Title &mdash; injected");
     expect(sanitizeHttpUrl("javascript:alert(1)")).toBeNull();
     expect(formatMarkdownLink("click", "javascript:alert(1)")).toBe("click");
     expect(formatMarkdownLink("ok", "https://example.com/a)(b")).toContain("https://example.com");
@@ -485,8 +485,13 @@ describe("markdown escaping", () => {
 
     const parsed = parseAppliedCheckboxesFromReport(checklist, "report.md");
     expect(parsed).toHaveLength(1);
-    expect(parsed[0]?.company).toBe(company);
-    expect(parsed[0]?.title).toBe(title);
+    expect(parsed[0]?.company).toBe(
+      "[click](https://evil.example) ![image](https://evil.example/i) " +
+        String.raw`*Acme* \ path <b>x</b> &mdash; &lt;literal&gt;`,
+    );
+    expect(parsed[0]?.title).toBe(
+      "`code` (role) [label] **bold** \\server &mdash; <i>title</i>",
+    );
   });
 
   it("neutralizes HTML and Markdown in source-controlled headings", () => {

@@ -1,5 +1,9 @@
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { z } from "zod";
+import {
+  atomicWriteJson,
+  loadPersistedState,
+} from "./jobs/persistence.js";
 import { paths } from "./paths.js";
 
 const GitHubReposConfigSchema = z.object({
@@ -27,8 +31,8 @@ export function loadGitHubConfig(): GitHubReposConfig {
   return GitHubReposConfigSchema.parse(raw);
 }
 
-const IndexStateSchema = z.object({
-  version: z.number(),
+export const IndexStateSchema = z.object({
+  version: z.literal(1),
   lastFullIndexAt: z.string().nullable(),
   repos: z.record(
     z.string(),
@@ -41,15 +45,18 @@ const IndexStateSchema = z.object({
 
 export type IndexState = z.infer<typeof IndexStateSchema>;
 
+export function parseIndexState(raw: unknown): IndexState {
+  return IndexStateSchema.parse(raw);
+}
+
 export function loadIndexState(): IndexState {
-  if (!existsSync(paths.indexState)) {
-    return { version: 1, lastFullIndexAt: null, repos: {} };
-  }
-  return IndexStateSchema.parse(
-    JSON.parse(readFileSync(paths.indexState, "utf8")),
+  return loadPersistedState(
+    paths.indexState,
+    parseIndexState,
+    (): IndexState => ({ version: 1, lastFullIndexAt: null, repos: {} }),
   );
 }
 
 export function saveIndexState(state: IndexState): void {
-  writeFileSync(paths.indexState, `${JSON.stringify(state, null, 2)}\n`);
+  atomicWriteJson(paths.indexState, state, { backup: true });
 }

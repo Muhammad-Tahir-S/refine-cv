@@ -23,7 +23,7 @@ next phase begins.
 - [x] Phase 6: repair identity, dedupe, and provenance
 - [x] Phase 7: fix and optimize board adapters
 - [x] Phase 8: improve reports and observability
-- [ ] Phase 9: repair GitHub evidence semantics
+- [x] Phase 9: repair GitHub evidence semantics
 - [ ] Phase 10: harden CV rendering
 - [ ] Phase 11: add effectiveness improvements
 - [ ] Phase 12: complete quality, privacy, and operational gates

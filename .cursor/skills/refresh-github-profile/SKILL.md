@@ -23,19 +23,21 @@ pnpm index-github
 ```
 
 3. On success, read outputs:
-   - `profile/github-index.json`
+   - `profile/github-index.json` (v4 complete evidence snapshot)
+   - `profile/github-delta.json` (this run's delta only)
    - `profile/github-summary.md`
-   - `profile/index-state.json` (watermarks)
+   - `profile/index-state.json` (watermarks; advanced only after durable writes)
    - `profile/refresh-log.md` (latest row)
 
-4. Summarize **delta** for the user: new commits/PRs since last run, new themes, repos skipped.
+4. Summarize **delta** for the user from `github-delta.json`: added/updated commits and PRs, repos failed (prior evidence retained), new themes.
 
 5. If `base-cv-enhanced.md` exists, suggest bullet updates only where GitHub evidence newly supports claims; do not auto-edit enhanced CV without user approval.
 
 ## Incremental behavior
 
 - Per repo: full history when `maxCommitsPerRepo` is `0` (default); all your PRs when `maxPullRequestsPerRepo` is `0`
-- Later runs: `since={lastIndexedAt}` from `profile/index-state.json`
+- Later runs: incremental fetch with overlap around `profile/index-state.json` watermarks; merges into durable v4 snapshot in `github-index.json`
+- Explicit per-run delta in `profile/github-delta.json` (added/updated commit SHAs and PR numbers)
 
 ## Errors
 

@@ -1,9 +1,8 @@
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import type { Octokit } from "@octokit/rest";
 import {
   loadGitHubConfig,
   loadIndexState,
-  saveIndexState,
   type GitHubReposConfig,
 } from "../config.js";
 import { paths } from "../paths.js";
@@ -14,42 +13,26 @@ import {
   resolveCommitAuthorIdentity,
   type CommitAuthorIdentity,
 } from "./commit-author.js";
-import { inferThemes } from "./themes.js";
 import { buildGithubSummaryMarkdown } from "./summary.js";
+import {
+  buildGithubRefreshResult,
+  computeRepoFetchSince,
+  type RepoFetchOutcome,
+} from "./refresh-run.js";
+import { dedupeFetchedCommitsBySha } from "./merge.js";
+import type { CommitSample, PrSample } from "./schema.js";
+import {
+  defaultGithubArtifactPaths,
+  loadPriorGithubIndex,
+  publishGithubRefresh,
+  readRefreshLog,
+} from "./persistence.js";
+import {
+  appendRefreshLogRow,
+  refreshLogStatus,
+} from "./refresh-log.js";
 
-export interface CommitSample {
-  sha: string;
-  subject: string;
-  date: string;
-  author: string;
-}
-
-export interface PrSample {
-  number: number;
-  title: string;
-  state: string;
-  created_at: string;
-  merged_at: string;
-  labels: string;
-}
-
-export interface RepoIndexEntry {
-  repo: string;
-  mode: "first-run" | "incremental";
-  description: string;
-  topics: string[];
-  defaultBranch: string;
-  pushedAt: string;
-  languages: Record<string, number>;
-  commitCountThisRun: number;
-  /** Full commit history for this run (your commits only). */
-  commits: CommitSample[];
-  /** @deprecated Preview subset; use `commits` for full history. */
-  sampleCommits: CommitSample[];
-  pullRequests: PrSample[];
-  inferredThemes: string[];
-  watermark: { since: string; latestCommitSha: string };
-}
+export type { CommitSample, PrSample, RepoSnapshot } from "./schema.js";
 
 function commitLimit(config: GitHubReposConfig): number {
   return config.maxCommitsPerRepo ?? config.maxCommitsPerRepoFirstRun ?? 0;
@@ -57,17 +40,6 @@ function commitLimit(config: GitHubReposConfig): number {
 
 function prLimit(config: GitHubReposConfig): number {
   return config.maxPullRequestsPerRepo ?? 0;
-}
-
-function mergeLanguages(
-  agg: Record<string, number>,
-  lang: Record<string, number>,
-): Record<string, number> {
-  const out = { ...agg };
-  for (const [k, v] of Object.entries(lang)) {
-    out[k] = (out[k] ?? 0) + v;
-  }
-  return out;
 }
 
 function toCommitSample(
@@ -91,8 +63,9 @@ async function fetchCommitsByLogin(
   seen: Set<string>,
   own: Awaited<ReturnType<Octokit["repos"]["listCommits"]>>["data"],
   maxOwn: number,
-): Promise<void> {
+): Promise<boolean> {
   let page = 1;
+  let truncated = false;
   while (true) {
     const { data } = await octokit.repos.listCommits({
       owner,
@@ -109,12 +82,15 @@ async function fetchCommitsByLogin(
       if (seen.has(c.sha)) continue;
       seen.add(c.sha);
       own.push(c);
-      if (maxOwn > 0 && own.length >= maxOwn) return;
+      if (maxOwn > 0 && own.length >= maxOwn) {
+        return true;
+      }
     }
 
     if (data.length < 100) break;
     page += 1;
   }
+  return truncated;
 }
 
 async function fetchCommitsByNameScan(
@@ -127,7 +103,7 @@ async function fetchCommitsByNameScan(
   seen: Set<string>,
   own: Awaited<ReturnType<Octokit["repos"]["listCommits"]>>["data"],
   maxOwn: number,
-): Promise<void> {
+): Promise<boolean> {
   let page = 1;
   while (true) {
     const { data } = await octokit.repos.listCommits({
@@ -144,12 +120,15 @@ async function fetchCommitsByNameScan(
       if (!isOwnCommit(c, identity) || seen.has(c.sha)) continue;
       seen.add(c.sha);
       own.push(c);
-      if (maxOwn > 0 && own.length >= maxOwn) return;
+      if (maxOwn > 0 && own.length >= maxOwn) {
+        return true;
+      }
     }
 
     if (data.length < 100) break;
     page += 1;
   }
+  return false;
 }
 
 async function fetchOwnCommits(
@@ -161,43 +140,48 @@ async function fetchOwnCommits(
   since: string | undefined,
   maxOwn: number,
   filterToSelf: boolean,
-): Promise<{ commits: Awaited<ReturnType<Octokit["repos"]["listCommits"]>>["data"]; latestSha: string }> {
+): Promise<{
+  commits: CommitSample[];
+  commitsFetchedThisRun: number;
+  truncated: boolean;
+}> {
   const seen = new Set<string>();
   const own: Awaited<ReturnType<Octokit["repos"]["listCommits"]>>["data"] = [];
+  let truncated = false;
 
   if (filterToSelf) {
     for (const login of identity.githubLogins) {
-      await fetchCommitsByLogin(
-        octokit,
-        owner,
-        name,
-        defaultBranch,
-        login,
-        since,
-        seen,
-        own,
-        maxOwn,
-      );
-      if (maxOwn > 0 && own.length >= maxOwn) {
-        return { commits: own, latestSha: own[0]?.sha ?? "" };
-      }
+      truncated =
+        (await fetchCommitsByLogin(
+          octokit,
+          owner,
+          name,
+          defaultBranch,
+          login,
+          since,
+          seen,
+          own,
+          maxOwn,
+        )) || truncated;
+      if (maxOwn > 0 && own.length >= maxOwn) break;
     }
 
     if (own.length === 0) {
-      await fetchCommitsByNameScan(
-        octokit,
-        owner,
-        name,
-        defaultBranch,
-        identity,
-        since,
-        seen,
-        own,
-        maxOwn,
-      );
+      truncated =
+        (await fetchCommitsByNameScan(
+          octokit,
+          owner,
+          name,
+          defaultBranch,
+          identity,
+          since,
+          seen,
+          own,
+          maxOwn,
+        )) || truncated;
     }
   } else {
-    await fetchCommitsByNameScan(
+    truncated = await fetchCommitsByNameScan(
       octokit,
       owner,
       name,
@@ -210,7 +194,12 @@ async function fetchOwnCommits(
     );
   }
 
-  return { commits: own, latestSha: own[0]?.sha ?? "" };
+  const samples = dedupeFetchedCommitsBySha(own.map(toCommitSample));
+  return {
+    commits: samples,
+    commitsFetchedThisRun: own.length,
+    truncated,
+  };
 }
 
 async function fetchOwnPullRequests(
@@ -220,9 +209,10 @@ async function fetchOwnPullRequests(
   identity: CommitAuthorIdentity,
   filterToSelf: boolean,
   maxPrs: number,
-): Promise<Awaited<ReturnType<Octokit["pulls"]["list"]>>["data"]> {
+): Promise<{ pullRequests: PrSample[]; truncated: boolean }> {
   const own: Awaited<ReturnType<Octokit["pulls"]["list"]>>["data"] = [];
   let page = 1;
+  let truncated = false;
 
   while (true) {
     const { data } = await octokit.pulls.list({
@@ -239,40 +229,98 @@ async function fetchOwnPullRequests(
     for (const pr of data) {
       if (filterToSelf && !isOwnPullRequest(pr, identity)) continue;
       own.push(pr);
-      if (maxPrs > 0 && own.length >= maxPrs) return own;
+      if (maxPrs > 0 && own.length >= maxPrs) {
+        truncated = true;
+        return {
+          pullRequests: own.map((pr) => ({
+            number: pr.number,
+            title: pr.title,
+            state: pr.state,
+            created_at: pr.created_at,
+            merged_at: pr.merged_at ?? "",
+            labels: pr.labels
+              .map((l) => (typeof l === "string" ? l : l.name ?? ""))
+              .join(", "),
+          })),
+          truncated,
+        };
+      }
     }
 
     if (data.length < 100) break;
     page += 1;
   }
 
-  return own;
+  return {
+    pullRequests: own.map((pr) => ({
+      number: pr.number,
+      title: pr.title,
+      state: pr.state,
+      created_at: pr.created_at,
+      merged_at: pr.merged_at ?? "",
+      labels: pr.labels
+        .map((l) => (typeof l === "string" ? l : l.name ?? ""))
+        .join(", "),
+    })),
+    truncated: false,
+  };
 }
 
-async function indexOneRepo(
+export interface IndexGithubDeps {
+  loadConfig?: typeof loadGitHubConfig;
+  loadIndexState?: typeof loadIndexState;
+  createOctokit?: typeof createOctokit;
+  resolveIdentity?: typeof resolveCommitAuthorIdentity;
+  fetchRepo?: typeof fetchOneRepo;
+  loadPriorIndex?: typeof loadPriorGithubIndex;
+  publishRefresh?: typeof publishGithubRefresh;
+  readLog?: typeof readRefreshLog;
+  artifactPaths?: ReturnType<typeof defaultGithubArtifactPaths>;
+}
+
+export async function fetchRepoOutcomesWithIsolation(
+  repos: string[],
+  fetchRepo: (repo: string) => Promise<RepoFetchOutcome>,
+): Promise<RepoFetchOutcome[]> {
+  const outcomes: RepoFetchOutcome[] = [];
+  for (const repo of repos) {
+    try {
+      outcomes.push(await fetchRepo(repo));
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "unknown GitHub API failure";
+      console.warn(`warn: failed to refresh ${repo} — ${message}`);
+      outcomes.push({ ok: false, repo, error: message });
+    }
+  }
+  return outcomes;
+}
+
+async function fetchOneRepo(
   octokit: Octokit,
   repo: string,
   config: GitHubReposConfig,
   identity: CommitAuthorIdentity,
   since: string | undefined,
-): Promise<RepoIndexEntry | null> {
+): Promise<RepoFetchOutcome> {
   const [owner, name] = repo.split("/");
   if (!owner || !name) {
-    console.warn(`warn: invalid repo slug "${repo}" — skipped`);
-    return null;
+    return { ok: false, repo, error: `invalid repo slug "${repo}"` };
   }
 
   const filterToSelf = config.indexOnlyMyCommits !== false;
+  const fetchMode = since ? "incremental" : "first-run";
 
   let meta: Awaited<ReturnType<Octokit["repos"]["get"]>>["data"];
   try {
     ({ data: meta } = await octokit.repos.get({ owner, repo: name }));
-  } catch {
-    console.warn(`warn: cannot access ${repo} — skipped (check token permissions)`);
-    return null;
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "cannot access repository";
+    console.warn(`warn: cannot access ${repo} — ${message}`);
+    return { ok: false, repo, error: message };
   }
 
-  const mode = since ? "incremental" : "first-run";
   const defaultBranch = meta.default_branch;
   const maxOwn = commitLimit(config);
   const maxPrs = prLimit(config);
@@ -285,7 +333,11 @@ async function indexOneRepo(
     /* empty */
   }
 
-  const { commits: rawCommits, latestSha } = await fetchOwnCommits(
+  const {
+    commits,
+    commitsFetchedThisRun,
+    truncated: commitsTruncated,
+  } = await fetchOwnCommits(
     octokit,
     owner,
     name,
@@ -296,12 +348,12 @@ async function indexOneRepo(
     filterToSelf,
   );
 
-  const commits = rawCommits.map(toCommitSample);
-  let allText = commits.map((c) => c.subject).join("\n");
+  let fetchedPullRequests: PrSample[] = [];
+  let pullRequestsFetchedThisRun = 0;
+  let prsTruncated = false;
 
-  const pullRequests: PrSample[] = [];
   if (config.includePullRequests) {
-    const prs = await fetchOwnPullRequests(
+    const prResult = await fetchOwnPullRequests(
       octokit,
       owner,
       name,
@@ -309,65 +361,48 @@ async function indexOneRepo(
       filterToSelf,
       maxPrs,
     );
-
-    for (const pr of prs) {
-      pullRequests.push({
-        number: pr.number,
-        title: pr.title,
-        state: pr.state,
-        created_at: pr.created_at,
-        merged_at: pr.merged_at ?? "",
-        labels: pr.labels
-          .map((l) => (typeof l === "string" ? l : l.name ?? ""))
-          .join(", "),
-      });
-      allText += `\n${pr.title}`;
-    }
+    fetchedPullRequests = prResult.pullRequests;
+    pullRequestsFetchedThisRun = prResult.pullRequests.length;
+    prsTruncated = prResult.truncated;
   }
 
   if (filterToSelf) {
     console.log(
-      `  ${repo}: ${commits.length} your commits, ${pullRequests.length} your PRs`,
+      `  ${repo}: fetched ${commitsFetchedThisRun} commits, ${pullRequestsFetchedThisRun} PRs this run`,
     );
   }
 
   return {
+    ok: true,
     repo,
-    mode,
+    fetchMode,
     description: meta.description ?? "",
     topics: meta.topics ?? [],
     defaultBranch,
     pushedAt: meta.pushed_at ?? "",
     languages,
-    commitCountThisRun: commits.length,
-    commits,
-    sampleCommits: commits.slice(0, 25),
-    pullRequests,
-    inferredThemes: inferThemes(allText),
-    watermark: { since: since ?? "", latestCommitSha: latestSha },
+    fetchedCommits: commits,
+    fetchedPullRequests,
+    commitsFetchedThisRun,
+    pullRequestsFetchedThisRun,
+    commitsTruncatedThisRun: commitsTruncated,
+    pullRequestsTruncatedThisRun: prsTruncated,
   };
 }
 
-function appendRefreshLog(
-  timestamp: string,
-  repos: string[],
-  totalCommits: number,
-  totalPrs: number,
-): void {
-  const header = `# GitHub profile refresh log
+export async function runIndexGithub(deps: IndexGithubDeps = {}): Promise<void> {
+  const loadConfig = deps.loadConfig ?? loadGitHubConfig;
+  const loadState = deps.loadIndexState ?? loadIndexState;
+  const octokitFactory = deps.createOctokit ?? createOctokit;
+  const resolveIdentity = deps.resolveIdentity ?? resolveCommitAuthorIdentity;
+  const fetchRepo = deps.fetchRepo ?? fetchOneRepo;
+  const loadPriorIndex = deps.loadPriorIndex ?? loadPriorGithubIndex;
+  const publishRefresh = deps.publishRefresh ?? publishGithubRefresh;
+  const readLog = deps.readLog ?? readRefreshLog;
+  const artifactPaths =
+    deps.artifactPaths ?? defaultGithubArtifactPaths(paths.profile);
 
-| Timestamp (UTC) | Mode | Repos touched | Delta summary |
-|-----------------|------|---------------|----------------|
-`;
-  if (!existsSync(paths.refreshLog)) {
-    writeFileSync(paths.refreshLog, header);
-  }
-  const row = `| ${timestamp} | index | ${repos.join(" ")} | your_commits=${totalCommits} your_prs=${totalPrs} |\n`;
-  writeFileSync(paths.refreshLog, readFileSync(paths.refreshLog, "utf8") + row);
-}
-
-export async function runIndexGithub(): Promise<void> {
-  const config = loadGitHubConfig();
+  const config = loadConfig();
   if (config.repos.length === 0) {
     throw new Error(
       "No repos in config/github-repos.json — run `pnpm list-repos` and add selections.",
@@ -375,8 +410,8 @@ export async function runIndexGithub(): Promise<void> {
   }
 
   mkdirSync(paths.profile, { recursive: true });
-  const octokit = createOctokit();
-  const identity = await resolveCommitAuthorIdentity(
+  const octokit = octokitFactory();
+  const identity = await resolveIdentity(
     octokit,
     config.githubUsername,
     config.commitAuthorNames ?? [],
@@ -389,62 +424,86 @@ export async function runIndexGithub(): Promise<void> {
   console.log(
     `Limits: commits=${maxCommits === 0 ? "none" : maxCommits}, PRs=${maxPrs === 0 ? "none" : maxPrs}\n`,
   );
-
-  const state = loadIndexState();
-  const now = new Date().toISOString();
-
-  const entries: RepoIndexEntry[] = [];
-  let aggregateLanguages: Record<string, number> = {};
-  let totalCommits = 0;
-  let totalPrs = 0;
-
-  for (const repo of config.repos) {
-    console.log(`Indexing ${repo}...`);
-    const since = state.repos[repo]?.lastIndexedAt;
-    const entry = await indexOneRepo(octokit, repo, config, identity, since);
-    if (!entry) continue;
-
-    entries.push(entry);
-    if (entry.commitCountThisRun > 0 || entry.pullRequests.length > 0) {
-      aggregateLanguages = mergeLanguages(aggregateLanguages, entry.languages);
-    }
-    totalCommits += entry.commitCountThisRun;
-    totalPrs += entry.pullRequests.length;
-
-    state.repos[repo] = {
-      lastIndexedAt: now,
-      latestCommitSha: entry.watermark.latestCommitSha,
-    };
+  if (maxCommits > 0 || maxPrs > 0) {
+    console.warn(
+      "warn: capped GitHub retrieval cannot repair incomplete history. Set maxCommitsPerRepo and maxPullRequestsPerRepo to 0 for a complete rebuild.",
+    );
   }
 
-  state.lastFullIndexAt = now;
-  saveIndexState(state);
-
-  const indexDoc = {
-    version: 3,
-    generatedAt: now,
-    indexScope: "author-full-history",
-    authorIdentity: identity,
-    repos: entries,
-    aggregate: {
-      languages: aggregateLanguages,
-      repoCount: entries.length,
-      totalCommitsThisRun: totalCommits,
-      totalPullRequests: totalPrs,
-    },
-  };
-
-  writeFileSync(paths.githubIndex, `${JSON.stringify(indexDoc, null, 2)}\n`);
-  writeFileSync(
-    paths.githubSummary,
-    buildGithubSummaryMarkdown(now, entries, aggregateLanguages),
+  const priorIndexState = loadState();
+  const priorIndex = loadPriorIndex(
+    artifactPaths.githubIndex,
+    artifactPaths.indexState,
   );
-  appendRefreshLog(now, config.repos, totalCommits, totalPrs);
+  const now = new Date().toISOString();
+
+  const priorByRepo = new Map(
+    (priorIndex?.repos ?? []).map((repo) => [repo.repo, repo]),
+  );
+
+  const outcomes = await fetchRepoOutcomesWithIsolation(
+    config.repos,
+    async (repo) => {
+    console.log(`Indexing ${repo}...`);
+    const since = computeRepoFetchSince(
+      priorByRepo.get(repo),
+      priorIndexState,
+      repo,
+    );
+      return fetchRepo(octokit, repo, config, identity, since);
+    },
+  );
+
+  const refresh = buildGithubRefreshResult({
+    runAt: now,
+    selectedRepos: config.repos,
+    authorIdentity: identity,
+    priorIndex,
+    priorIndexState,
+    outcomes,
+    commitLimit: maxCommits,
+    prLimit: maxPrs,
+    includePullRequests: config.includePullRequests,
+  });
+
+  const summaryMarkdown = buildGithubSummaryMarkdown(
+    now,
+    refresh.index.repos,
+    refresh.index.aggregate.languages,
+    {
+      totalCommits: refresh.index.aggregate.totalCommits,
+      totalPullRequests: refresh.index.aggregate.totalPullRequests,
+      repoCount: refresh.index.aggregate.repoCount,
+    },
+    refresh.delta,
+  );
+
+  const existingLog = readLog(artifactPaths.refreshLog);
+  const refreshLogMarkdown = appendRefreshLogRow(
+    existingLog,
+    refresh.delta,
+    refreshLogStatus(refresh.delta),
+  );
+
+  publishRefresh({
+    paths: artifactPaths,
+    index: refresh.index,
+    summaryMarkdown,
+    delta: refresh.delta,
+    refreshLogMarkdown,
+    indexState: refresh.indexState,
+  });
 
   console.log("\nDone. Wrote:");
-  console.log(`  ${paths.githubIndex}`);
-  console.log(`  ${paths.githubSummary}`);
+  console.log(`  ${artifactPaths.githubIndex}`);
+  console.log(`  ${artifactPaths.githubSummary}`);
+  console.log(`  ${artifactPaths.githubDelta}`);
   console.log(
-    `  Totals: ${totalCommits} your commits, ${totalPrs} your PRs across ${entries.length} repos`,
+    `  Totals (complete snapshot): ${refresh.index.aggregate.totalCommits} your commits, ${refresh.index.aggregate.totalPullRequests} your PRs across ${refresh.index.aggregate.repoCount} repos`,
+  );
+  console.log(
+    `  Delta this run: +${refresh.delta.aggregateDelta.commitsAdded} commits, +${refresh.delta.aggregateDelta.pullRequestsAdded} PRs`,
   );
 }
+
+export { fetchOneRepo as fetchOneRepoForTest };
