@@ -1,5 +1,5 @@
 {
-  "_comment": "Copy to github-repos.json and fill in your selections (or use pnpm setup)",
+  "_comment": "Copy to config/github-repos.json. Set commitAuthorNames to the exact names on your commits (no hardcoded defaults). Run pnpm list-repos to populate profile/github-repo-candidates.md, then add selections here.",
   "githubUsername": "",
   "repos": [],
   "maxCommitsPerRepo": 0,

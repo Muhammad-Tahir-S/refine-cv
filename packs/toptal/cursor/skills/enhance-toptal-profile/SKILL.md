@@ -15,14 +15,16 @@ Baseline profile optimization only — not per-job tailoring.
 
 **Load in order:**
 
-1. [sources/toptal-guides/developer-profile-creation-guide.md](../../../sources/toptal-guides/developer-profile-creation-guide.md) — primary authority for profile sections. *Degraded mode:* the guide extracts (items 1–2) are user-supplied and may be missing — if so, skip them, rely on `toptal-best-practices.md` alone, and note the degraded basis in the gap report.
-2. [sources/toptal-guides/job-application-matching-handbook.md](../../../sources/toptal-guides/job-application-matching-handbook.md) — §8 profile requirements
-3. [sources/toptal-best-practices.md](../../../sources/toptal-best-practices.md) — **§2 profile rules, §8 paste checklist** (this skill points here rather than restating the rules)
-4. [sources/toptal-references.json](../../../sources/toptal-references.json) for citations
+1. [sources/writing-style.md](../../../sources/writing-style.md) — anti-AI prose; polish pass before saving
+2. [sources/evidence-hierarchy.md](../../../sources/evidence-hierarchy.md) — index-first evidence for portfolio and About examples
+3. [sources/toptal-guides/developer-profile-creation-guide.md](../../../sources/toptal-guides/developer-profile-creation-guide.md) — primary authority for profile sections. *Degraded mode:* the guide extracts (items 3–4) are user-supplied and may be missing — if so, skip them, rely on `toptal-best-practices.md` alone, and note the degraded basis in the gap report.
+4. [sources/toptal-guides/job-application-matching-handbook.md](../../../sources/toptal-guides/job-application-matching-handbook.md) — §8 profile requirements
+5. [sources/toptal-best-practices.md](../../../sources/toptal-best-practices.md) — **§2 profile rules, §8 paste checklist** (this skill points here rather than restating the rules)
+6. [sources/toptal-references.json](../../../sources/toptal-references.json) for citations
 
 - Base CV: `profile/base-cv-enhanced.md` (fallback: `profile/base-cv.md`)
 - `profile/github-summary.md`, `profile/questionnaire.md`, `profile/gap-report.md` (if present)
-- Rule: [.cursor/rules/toptal-writing.mdc](../../rules/toptal-writing.mdc)
+- Rules: [.cursor/rules/toptal-writing.mdc](../../rules/toptal-writing.mdc), [.cursor/rules/writing-style.mdc](../../rules/writing-style.mdc)
 
 If `base-cv-enhanced.md` is still a placeholder, complete onboarding first.
 
@@ -36,11 +38,14 @@ Ask the user to paste their current profile (bio, skills with levels, portfolio 
 
 | Source | Use for |
 |--------|---------|
+| `github-index.json` | **Primary** — portfolio bullets, About achievements, named shipped work |
 | `toptal-profile-current.md` | What is live today; diff baseline |
-| `base-cv-enhanced.md` | Employment facts, titles, stack |
-| `github-summary.md` | Technical proof; respect `verified-from-github` vs `needs-your-confirmation` |
+| `base-cv-enhanced.md` | Employment facts, titles, dates only |
+| `github-summary.md` | Pointer into index |
 | `questionnaire.md` | Metrics, red lines, target-role emphasis |
 | `gap-report.md` | Known unsupported claims to avoid |
+
+Grep the index before writing portfolio entries; do not paraphrase CV bullets without PR referents.
 
 ### 3. Write `profile/toptal-profile-enhanced.md`
 
@@ -58,6 +63,8 @@ Prioritize the verified stack from CV and GitHub; prefer projects with indexed e
 
 **Completion criterion:** every §8 checklist row is satisfied in the output or listed as a gap in the gap report — no section left blank without a gap note.
 
+Run the [writing-style.md](../../../sources/writing-style.md) §4 polish pass on all paste blocks in `toptal-profile-enhanced.md` before continuing.
+
 ### 4. Write `profile/toptal-profile-gap-report.md`
 
 1. Weak or missing portfolio items — what to add or replace
@@ -65,6 +72,7 @@ Prioritize the verified stack from CV and GitHub; prefer projects with indexed e
 3. Skills under-leveled or missing that should appear on the profile
 4. Metrics needing user confirmation — from `needs-your-confirmation` tags
 5. Blocking questions only
+6. **Style pass** — from [sources/writing-style.md](../../../sources/writing-style.md) §5; mark pass/fail
 
 ### 5. Handoff
 

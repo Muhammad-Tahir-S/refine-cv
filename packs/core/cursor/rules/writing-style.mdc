@@ -1,0 +1,19 @@
+---
+description: Anti-AI writing patterns for all job-application prose in refine-cv
+globs:
+  - jobs/**
+  - profile/**
+  - sources/writing-style.md
+alwaysApply: false
+---
+
+# Writing style in refine-cv
+
+When generating or editing **prose** (CV bullets, cover letters, pitches, profiles, application answers):
+
+1. **Load first:** [sources/writing-style.md](../../sources/writing-style.md) — single source for anti-AI patterns.
+2. **Personal overrides:** `profile/questionnaire.md` § Writing voice.
+3. **Mandatory polish pass:** Run the §4 checklist in `writing-style.md` before saving any prose file. Log **Style pass** in the job or profile report.
+4. **Do not conflict with domain rules:** CV ATS rules (`cv-best-practices.md`) and Toptal voice (`toptal-best-practices.md`) still apply; this rule adds prose-quality guardrails on top.
+
+Hard bans: **zero em dashes**, **no contrast clichés** (`not just X`, `X, not Y`, split-sentence negation), **Tier-1 AI vocabulary** per the table in `writing-style.md`.

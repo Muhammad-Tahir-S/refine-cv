@@ -15,7 +15,10 @@ Thumbs.db
 # Secrets — never commit tokens
 .env
 .env.*
+!.env.example
 *.pem
+*_token*
+*.pat
 
 # User PII — allowlist: everything in profile/ stays local except docs/templates
 profile/*
@@ -28,6 +31,11 @@ config/*
 
 # Application artifacts (employer-specific drafts)
 jobs/**
+!jobs/.gitkeep
+
+# Optional local overrides
+profile/local-notes.md
+profile/toptal-profile-current.md
 
 # Toptal raw extracts and user-supplied PDFs (BYO — not redistributed)
 sources/toptal-guides/_*.txt
@@ -35,6 +43,7 @@ sources/toptal-guides/job-application-matching-handbook.md
 sources/toptal-guides/developer-profile-creation-guide.md
 sources/toptal-guides/pdf/*
 !sources/toptal-guides/pdf/.gitkeep
+sources/toptal-guides/pdf/pages/
 
 # Synced Cursor assets (canonical copies live in packs/)
 .cursor/skills/

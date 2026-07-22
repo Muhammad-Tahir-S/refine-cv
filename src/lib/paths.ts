@@ -10,6 +10,10 @@ export const paths = {
   refineCvConfig: join(ROOT, "config", "refine-cv.json"),
   config: join(ROOT, "config", "github-repos.json"),
   configExample: join(ROOT, "config", "github-repos.example.json"),
+  jobSearchConfig: join(ROOT, "config", "job-search.json"),
+  jobSearchNodejsBackendConfig: join(ROOT, "config", "job-search-nodejs-backend.json"),
+  jobSourcesConfig: join(ROOT, "config", "job-sources.json"),
+  jobsDir: join(ROOT, "jobs"),
   profile: join(ROOT, "profile"),
   baseCvPdf: join(ROOT, "profile", "base-cv.pdf"),
   baseCvMd: join(ROOT, "profile", "base-cv.md"),
@@ -17,6 +21,7 @@ export const paths = {
   questionnaire: join(ROOT, "profile", "questionnaire.md"),
   questionnaireExample: join(ROOT, "profile", "questionnaire.example.md"),
   githubIndex: join(ROOT, "profile", "github-index.json"),
+  githubDelta: join(ROOT, "profile", "github-delta.json"),
   githubSummary: join(ROOT, "profile", "github-summary.md"),
   indexState: join(ROOT, "profile", "index-state.json"),
   refreshLog: join(ROOT, "profile", "refresh-log.md"),
@@ -26,6 +31,7 @@ export const paths = {
   toptalProfileEnhanced: join(ROOT, "profile", "toptal-profile-enhanced.md"),
   toptalProfileGapReport: join(ROOT, "profile", "toptal-profile-gap-report.md"),
   cvBestPractices: join(ROOT, "sources", "cv-best-practices.md"),
+  writingStyle: join(ROOT, "sources", "writing-style.md"),
   toptalBestPractices: join(ROOT, "sources", "toptal-best-practices.md"),
   toptalReferences: join(ROOT, "sources", "toptal-references.json"),
   toptalMatchingHandbook: join(
@@ -41,6 +47,7 @@ export const paths = {
     "developer-profile-creation-guide.md",
   ),
   tailorSkill: join(ROOT, ".cursor", "skills", "tailor-cv", "SKILL.md"),
+  avoidAiWritingSkill: join(ROOT, ".cursor", "skills", "avoid-ai-writing", "SKILL.md"),
   enhanceToptalProfileSkill: join(
     ROOT,
     ".cursor",
@@ -55,6 +62,7 @@ export const paths = {
     "generate-toptal-pitch",
     "SKILL.md",
   ),
+  scanJobsSkill: join(ROOT, ".cursor", "skills", "scan-jobs", "SKILL.md"),
   cvTemplateCss: join(ROOT, "templates", "cv", "resume.css"),
 };
 

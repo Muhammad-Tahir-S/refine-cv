@@ -167,6 +167,18 @@ Primary authorities: university career centers (Harvard, Berkeley iSchool, UT Au
 
 ## 5. Honesty and evidence (repo-specific)
 
+**Evidence hierarchy:** [evidence-hierarchy.md](evidence-hierarchy.md) — index-first tailoring for all job outputs.
+
+### Rule: Grep `github-index.json` before writing tailored bullets or cover letters
+
+**Why:** Tailored CV bullets and cover letters must cite concrete merged PRs/commits, not paraphrase `base-cv-enhanced.md`. CV whiffing produces generic output.
+
+**Source IDs:** _(workflow guardrail)_
+
+**Anti-patterns:**
+- Writing tailored bullets from CV only without index search
+- Vague claims with no PR title or shipped artifact in the match report
+
 ### Rule: Never invent employers, titles, dates, or metrics
 
 **Why:** Ethical baseline; this repo aggregates GitHub and questionnaire evidence to support claims.
@@ -223,4 +235,5 @@ Use at the end of every tailoring run:
 - [ ] Contact info in body, not header/footer
 - [ ] File format matches employer instructions (DOCX vs PDF)
 - [ ] No invented facts; gaps listed for user
+- [ ] **Index search log** in match report; top bullets trace to merged PRs
 - [ ] Evidence tags respected (`verified-from-github` vs `needs-your-confirmation`)

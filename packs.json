@@ -3,18 +3,20 @@
   "packs": {
     "core": {
       "label": "Core",
-      "description": "Onboarding, CV extraction, questionnaire, and CV writing rules",
+      "description": "Onboarding, CV extraction, questionnaire, writing rules, and anti-AI audit",
       "default": true,
       "required": true,
       "dependsOn": [],
       "cursor": {
-        "skills": ["onboard-profile"],
-        "commands": ["onboard"],
-        "rules": ["cv-writing"]
+        "skills": ["onboard-profile", "avoid-ai-writing"],
+        "commands": ["onboard", "avoid-ai-writing"],
+        "rules": ["cv-writing", "writing-style", "avoid-ai-writing"]
       },
       "sources": [
         "sources/cv-best-practices.md",
-        "sources/references.json"
+        "sources/references.json",
+        "sources/writing-style.md",
+        "sources/evidence-hierarchy.md"
       ],
       "scripts": ["extract-cv", "validate"]
     },
@@ -32,16 +34,35 @@
     },
     "tailor-cv": {
       "label": "Tailor CV",
-      "description": "Job-specific CV tailoring, match reports, and PDF export",
+      "description": "Job-specific CV tailoring, cover letters, match reports, and PDF export",
       "default": false,
       "recommended": true,
       "dependsOn": ["core"],
       "cursor": {
-        "skills": ["tailor-cv"],
-        "commands": ["tailor-cv"]
+        "skills": ["tailor-cv", "generate-cover-letter"],
+        "commands": ["tailor-cv", "generate-cover-letter"]
       },
-      "sources": ["templates/cv/resume.css"],
+      "sources": ["templates/cv/resume.css", "sources/cover-letter-best-practices.md"],
       "scripts": ["render-cv", "setup:pdf"]
+    },
+    "job-scan": {
+      "label": "Job scan",
+      "description": "Board-first job search and optional LinkedIn discovery",
+      "default": false,
+      "recommended": true,
+      "dependsOn": ["core"],
+      "cursor": {
+        "skills": ["scan-jobs"],
+        "commands": ["scan-jobs"]
+      },
+      "sources": ["config/job-sources.json"],
+      "scripts": [
+        "scan-jobs",
+        "mark-applied",
+        "linkedin:login",
+        "discover-linkedin",
+        "setup:linkedin"
+      ]
     },
     "toptal": {
       "label": "Toptal",

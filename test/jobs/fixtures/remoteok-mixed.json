@@ -1,0 +1,27 @@
+[
+  {
+    "last_updated": 1720000000,
+    "legal": "Remote OK API terms apply."
+  },
+  {
+    "id": "101",
+    "slug": "senior-react-engineer-acme",
+    "epoch": 1784000000,
+    "date": "2026-07-01",
+    "company": "Acme Corp",
+    "position": "Senior React Frontend Engineer",
+    "tags": ["react", "frontend", "remote"],
+    "description": "Build React apps for a remote team worldwide. Strong TypeScript and Next.js required for production UI work.",
+    "location": "Remote",
+    "url": "https://remoteok.com/remote-jobs/101",
+    "apply_url": "https://acme.example/jobs/react",
+    "last_updated": 1720000100
+  },
+  {
+    "company": "Broken Co",
+    "position": "Adelaide",
+    "description": "There are no articles in this category.",
+    "location": "Adelaide",
+    "url": "https://remoteok.com/remote-jobs/bad"
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "data": [
+    {
+      "slug": "backend-engineer-acme",
+      "company_name": "Acme",
+      "title": "Backend Engineer",
+      "description": "Node.js services.",
+      "remote": true,
+      "url": "https://arbeitnow.com/jobs/backend-engineer-acme",
+      "created_at": 1720000000
+    },
+    {
+      "slug": "broken",
+      "title": "No company"
+    }
+  ]
+}

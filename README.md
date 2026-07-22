@@ -36,18 +36,19 @@ Agent behavior is packaged as **feature packs**. Canonical skills/commands/rules
 **Keep your copy private.** This repo is designed so personal data stays local:
 
 - `profile/` and `config/` use **gitignore allowlists**: everything is ignored except `profile/ONBOARDING.md`, `profile/questionnaire.example.md`, and `config/*.example.json`. New files you (or the tools) drop there are ignored by default.
-- `jobs/` (per-application drafts) and user-supplied Toptal PDFs/extracts are also gitignored.
+- `jobs/` (per-application drafts, scan reports) and user-supplied Toptal PDFs/extracts are also gitignored (`jobs/.gitkeep` is tracked).
 - Use a **private** GitHub repository.
 - Private GitHub repos are indexed for **metadata only** (commit subjects, PR titles) — never paste proprietary code into outputs.
 - **Git history warning:** gitignore only protects future commits. If personal files were ever committed to your copy, they remain in git history — before making a repo public or turning it into a template, start from a fresh history rather than relying on deletions.
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) 18+
+- [Node.js](https://nodejs.org/) 20+ (`.nvmrc` pins v22)
 - [pnpm](https://pnpm.io/): `npm install -g pnpm`
 - [Cursor](https://cursor.com/) (v1 targets Cursor's `.cursor/` skills/commands/rules)
 - Optional, for the github-evidence pack: a `GITHUB_TOKEN` in `.env` or the [GitHub CLI](https://cli.github.com/) (`gh`)
 - Optional, for the tailor-cv pack: ~170 MB disk for a Puppeteer-managed Chrome (PDF rendering; installed by the wizard, not on `pnpm install`)
+- Optional, for the job-scan pack: Chrome for LinkedIn discovery (`pnpm setup:linkedin`)
 
 ## 5-minute quickstart
 
@@ -113,9 +114,10 @@ Prints your next steps (which depend on installed packs) and runs `pnpm validate
 
 | Pack | What it adds | Default |
 |------|--------------|---------|
-| **core** | Onboarding, CV extraction, questionnaire, CV writing rules | Always |
+| **core** | Onboarding, CV extraction, questionnaire, writing rules, anti-AI audit | Always |
 | **github-evidence** | Repo indexing, weekly refresh skill | Recommended |
-| **tailor-cv** | JD tailoring, match reports, PDF export | Recommended |
+| **tailor-cv** | JD tailoring, cover letters, match reports, PDF export | Recommended |
+| **job-scan** | Public board scan, applied-job tracking, optional LinkedIn discovery | Recommended |
 | **toptal** | Profile enhancement + job pitches (BYO PDF guides) | Opt-in |
 
 Packs are defined in [`packs.json`](packs.json) (the single source of truth — `pnpm validate` checks assets straight from it). Canonical pack assets live in `packs/<name>/cursor/`; `pnpm setup` copies selected packs into `.cursor/`. See [docs/PACKS.md](docs/PACKS.md) for per-pack details and how to add a custom pack.
@@ -129,12 +131,17 @@ Available commands depend on installed packs:
 | Command | Pack | What the agent does |
 |---------|------|---------------------|
 | `/onboard` | core | Asks only the questionnaire gaps not answerable from your CV/GitHub, writes `profile/questionnaire.md`, `profile/base-cv-enhanced.md` (stronger bullets, same facts), and `profile/gap-report.md` |
+| `/avoid-ai-writing` | core | Deep audit or rewrite to remove AI writing patterns before sending |
 | `/tailor-cv` | tailor-cv | Paste a JD → `jobs/YYYY-MM-DD-company-role/` with `tailored-cv.md`, `match-report.md`, optional cover-letter hooks, and a rendered PDF |
+| `/generate-cover-letter` | tailor-cv | Paste a JD → `cover-letter.md` with index-first evidence and anti-AI double-check |
+| `/scan-jobs` | job-scan | Run board-first job scan and report new React frontend remote roles |
 | `/toptal-pitch` | toptal | Paste a Toptal JD → third-person application pitch + pitch match report |
 | `/enhance-toptal-profile` | toptal | Paste your current Toptal profile → enhanced bio/skills/portfolio + gap report |
 | `/refresh-github-profile` | github-evidence | Re-runs the index, summarizes deltas, appends to `profile/refresh-log.md` |
 
 Weekly refresh loop (after the first successful index): `/loop 7d /refresh-github-profile` — see [docs/WEEKLY-REFRESH.md](docs/WEEKLY-REFRESH.md).
+
+Job scan loop: `/loop 7d /scan-jobs` — see [docs/job-board-sources.md](docs/job-board-sources.md).
 
 ## CLI reference
 
@@ -149,8 +156,15 @@ All scripts build first, so they always run current code.
 | `pnpm index-github` | github-evidence | Incrementally index repos from `config/github-repos.json` → `profile/github-index.json` + `profile/github-summary.md` |
 | `pnpm render-cv <input.md> [-o out.pdf]` | tailor-cv | Markdown CV → ATS-friendly PDF |
 | `pnpm setup:pdf` | tailor-cv | Install the Puppeteer-managed Chrome (idempotent) |
+| `pnpm scan-jobs [--force] [--config …]` | job-scan | Board scan → report + raw JSON |
+| `pnpm mark-applied` | job-scan | Sync applied checkboxes to state file |
+| `pnpm linkedin:login` | job-scan | Save LinkedIn session (Chrome via Playwright) |
+| `pnpm discover-linkedin` | job-scan | Low-volume LinkedIn external-apply discovery |
+| `pnpm setup:linkedin` | job-scan | Install Playwright Chrome |
 | `pnpm extract-toptal-guides [--force]` | toptal | Extract user-supplied PDFs → structured markdown (`--force` overwrites existing extracts) |
 | `pnpm auth:github` | github-evidence | Shortcut for `gh auth login` |
+| `pnpm test` | — | Unit tests (Vitest) |
+| `pnpm check:release` | — | Scan tracked files for secrets / PII |
 | `pnpm typecheck` / `pnpm build` | — | TypeScript check / compile to `dist/` |
 
 ## Directory layout
@@ -176,6 +190,8 @@ Files created and maintained on your machine (all gitignored):
 |------|-----------|----------|
 | `config/refine-cv.json` | `pnpm setup` | Installed packs, setup progress flags (`cvIntakeCompleted`, `githubConnectCompleted`) |
 | `config/github-repos.json` | setup wizard (or by hand from the example) | GitHub username, repos to index, indexing options |
+| `config/job-search.json` | copied from example on first setup | Geo criteria, role filters, employer blocklist |
+| `config/job-search-nodejs-backend.json` | copied from example (optional) | Backend/Node.js scan profile |
 | `profile/base-cv.pdf` | you (via wizard) | Master CV PDF |
 | `profile/base-cv.md` | `pnpm extract-cv` or pasted-text intake | Extracted CV text (header marker identifies real extracts) |
 | `profile/questionnaire.md` | seeded by setup, filled by `/onboard` | Targeting, metrics, red lines, preferences |
@@ -187,7 +203,8 @@ Files created and maintained on your machine (all gitignored):
 | `profile/github-repo-candidates.md` | `pnpm list-repos` | Discovered repos for selection |
 | `profile/refresh-log.md` | `/refresh-github-profile` | One row per refresh run |
 | `profile/toptal-profile-*.md` | `/enhance-toptal-profile` | Toptal profile snapshot, enhanced version, gap report |
-| `jobs/YYYY-MM-DD-company-role/` | `/tailor-cv`, `/toptal-pitch` | Per-application outputs |
+| `jobs/YYYY-MM-DD-company-role/` | `/tailor-cv`, `/toptal-pitch`, `/generate-cover-letter` | Per-application outputs |
+| `jobs/{UTC}-{role}-job-scan-*/` | `pnpm scan-jobs` | Scan reports and raw JSON |
 
 ## Everyday workflows
 
@@ -207,6 +224,13 @@ Files created and maintained on your machine (all gitignored):
 
 - `/enhance-toptal-profile` with your current profile pasted — apply the top changes on Toptal
 - `/toptal-pitch` per job application
+
+### Job scanning (job-scan pack)
+
+1. Copy `config/job-search*.example.json` to gitignored paths (see [profile/ONBOARDING.md](profile/ONBOARDING.md))
+2. `pnpm scan-jobs` or `/scan-jobs` in Cursor
+3. Pick roles from the report; run `/tailor-cv` or `/generate-cover-letter` per listing
+4. Tick applied in the report checklist — the next scan auto-syncs
 
 ### Keeping GitHub evidence fresh
 

@@ -11,6 +11,9 @@ import {
   resolvePackDependencies,
   type PacksManifest,
 } from "./packs.js";
+import { loadJobSourcesConfig } from "./jobs/sources/registry.js";
+import { loadJobSearchConfigAt } from "./jobs/scan-policy.js";
+import { LINKEDIN_PROFILE_DIR } from "./jobs/state.js";
 
 type Status = "ok" | "warn" | "fail";
 type Counts = { ok: number; warn: number; fail: number };
@@ -197,6 +200,47 @@ export function runValidateSetup(): number {
     if (existsSync(paths.toptalProfileCurrent))
       check("ok", "profile/toptal-profile-current.md", counts);
     else check("warn", "no Toptal profile snapshot — paste via /enhance-toptal-profile", counts);
+  }
+
+  if (installed.includes("job-scan")) {
+    try {
+      const sources = loadJobSourcesConfig();
+      const enabled = sources.sources.filter((source) => source.enabled).length;
+      check("ok", `config/job-sources.json valid (${enabled} enabled board(s))`, counts);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      check("fail", `config/job-sources.json invalid or missing — ${message}`, counts);
+    }
+
+    try {
+      loadJobSearchConfigAt(paths.jobSearchConfig);
+      check("ok", "config/job-search.json valid", counts);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      check("fail", `config/job-search.json invalid or missing — ${message}`, counts);
+    }
+
+    if (existsSync(paths.jobSearchNodejsBackendConfig)) {
+      try {
+        loadJobSearchConfigAt(paths.jobSearchNodejsBackendConfig);
+        check("ok", "config/job-search-nodejs-backend.json valid", counts);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        check("warn", `config/job-search-nodejs-backend.json invalid — ${message}`, counts);
+      }
+    } else {
+      check("warn", "config/job-search-nodejs-backend.json missing (optional backend profile)", counts);
+    }
+
+    if (existsSync(LINKEDIN_PROFILE_DIR)) {
+      check("ok", "LinkedIn session profile present (optional discovery)", counts);
+    } else {
+      check(
+        "warn",
+        "no LinkedIn session — optional; run pnpm linkedin:login for discovery",
+        counts,
+      );
+    }
   }
 
   console.log(`\nSummary: ${counts.ok} ok, ${counts.warn} warn, ${counts.fail} fail`);

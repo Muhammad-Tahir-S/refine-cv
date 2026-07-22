@@ -23,10 +23,10 @@ Installed packs are recorded in `config/refine-cv.json` (gitignored, created by 
 
 | Asset | Path |
 |-------|------|
-| Skill | `onboard-profile` |
-| Command | `/onboard` |
-| Rule | `cv-writing.mdc` |
-| Sources | `sources/cv-best-practices.md`, `sources/references.json` |
+| Skills | `onboard-profile`, `avoid-ai-writing` |
+| Commands | `/onboard`, `/avoid-ai-writing` |
+| Rules | `cv-writing.mdc`, `writing-style.mdc`, `avoid-ai-writing.mdc` |
+| Sources | `sources/cv-best-practices.md`, `sources/references.json`, `sources/writing-style.md`, `sources/evidence-hierarchy.md` |
 | Scripts | `extract-cv`, `validate` |
 
 ### github-evidence (recommended)
@@ -43,12 +43,23 @@ Indexes selected repos for CV bullet evidence. Private repos: metadata only.
 
 | Asset | Path |
 |-------|------|
-| Skill | `tailor-cv` |
-| Command | `/tailor-cv` |
-| Template | `templates/cv/resume.css` |
+| Skills | `tailor-cv`, `generate-cover-letter` |
+| Commands | `/tailor-cv`, `/generate-cover-letter` |
+| Sources | `templates/cv/resume.css`, `sources/cover-letter-best-practices.md` |
 | Scripts | `render-cv`, `setup:pdf` |
 
 Outputs live under `jobs/YYYY-MM-DD-company-role/`. PDF rendering needs a Puppeteer-managed Chrome (~170 MB) — the setup wizard offers to install it when this pack is selected; otherwise run `pnpm setup:pdf` before the first `pnpm render-cv`.
+
+### job-scan (recommended)
+
+| Asset | Path |
+|-------|------|
+| Skill | `scan-jobs` |
+| Command | `/scan-jobs` |
+| Sources | `config/job-sources.json` |
+| Scripts | `scan-jobs`, `mark-applied`, `linkedin:login`, `discover-linkedin`, `setup:linkedin` |
+
+Scan state lives under `~/.config/refine-cv/`. Copy `config/job-search*.example.json` before the first scan. LinkedIn discovery is optional and low-volume.
 
 ### toptal (opt-in)
 

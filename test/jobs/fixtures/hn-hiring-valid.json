@@ -1,0 +1,28 @@
+{
+  "id": 999,
+  "title": "Ask HN: Who is hiring? (July 2026)",
+  "children": [
+    {
+      "id": 1001,
+      "author": "startupco",
+      "text": "StartupCo | Mid Node.js Backend Engineer | REMOTE | https://startupco.com/jobs/node",
+      "children": [
+        {
+          "id": 1101,
+          "author": "candidate",
+          "text": "Is this role available in Nigeria? I would like to discuss the backend position."
+        }
+      ]
+    },
+    {
+      "id": 1002,
+      "author": "otherco",
+      "text": "We are hiring a sales manager in NYC."
+    },
+    {
+      "id": 1003,
+      "author": "tiny",
+      "text": "Hi"
+    }
+  ]
+}

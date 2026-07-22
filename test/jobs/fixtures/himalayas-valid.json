@@ -1,0 +1,20 @@
+{
+  "jobs": [
+    {
+      "guid": "himalayas-1",
+      "title": "Senior Frontend Engineer",
+      "companyName": "Acme",
+      "description": "<p>React and TypeScript role.</p>",
+      "applicationLink": "https://himalayas.app/jobs/apply/1",
+      "pubDate": "2026-07-01T00:00:00.000Z",
+      "locationRestrictions": []
+    },
+    {
+      "guid": "himalayas-2",
+      "companyName": "Missing Title Co"
+    }
+  ],
+  "totalCount": 2,
+  "limit": 20,
+  "offset": 0
+}

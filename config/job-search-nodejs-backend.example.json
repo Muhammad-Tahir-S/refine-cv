@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "applicant": {
+    "location": "Lagos, Nigeria",
+    "citizenship": "Nigeria",
+    "workPermitCountries": ["Nigeria"]
+  },
+  "geoEligibility": {
+    "summary": "Nigerian citizen with Nigeria work permit only — no EU/UK/US right to work",
+    "acceptGlobalRemote": true,
+    "acceptEmeaOnlyWhenAfricaMentioned": true,
+    "defaultEmeaToVerify": true
+  },
+  "roleFilters": {
+    "profile": "nodejsBackend",
+    "levels": ["junior", "mid", "unknown"]
+  },
+  "blocklist": [
+    "DataAnnotation",
+    "Wing Assistant",
+    "BairesDev",
+    "P2 Recruitment",
+    "Hire Feed",
+    "Crossing Hurdles",
+    "Jobgether",
+    "Digital Gurus",
+    "Penta Consulting",
+    "EPAM",
+    "Infosys",
+    "Virtusa",
+    "Mindrift",
+    "Metabase",
+    "Canonical",
+    "Micro1"
+  ],
+  "_comment": "Copy to config/job-search-nodejs-backend.json. Geo classification in src/lib/jobs/geo.ts is Nigeria-focused — edit applicant fields for your situation; other countries need geo.ts changes."
+}
