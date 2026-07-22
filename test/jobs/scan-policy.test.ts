@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { join } from "node:path";
 import { paths } from "../../src/lib/paths.ts";
+import { fixturePaths } from "./helpers/fixture-paths.ts";
 import { classifyGeoEligibility } from "../../src/lib/jobs/geo.ts";
 import { filterPostings, matchesScanCriteria } from "../../src/lib/jobs/filter.ts";
 import { matchesRoleProfile } from "../../src/lib/jobs/role-match.ts";
@@ -42,8 +43,8 @@ function makePosting(overrides: Partial<JobPosting> & Pick<JobPosting, "title" |
 
 describe("scan policy compilation", () => {
   it("loads default react config with legacy reactFrontend flag", () => {
-    const config = loadJobSearchConfigAt(paths.jobSearchConfig);
-    const policy = compileScanPolicy(config, { configPath: paths.jobSearchConfig });
+    const config = loadJobSearchConfigAt(fixturePaths.jobSearchReact);
+    const policy = compileScanPolicy(config, { configPath: fixturePaths.jobSearchReact });
 
     expect(policy.roleProfile).toBe("reactFrontend");
     expect(policy.allowedLevels).toContain("senior");
@@ -51,7 +52,7 @@ describe("scan policy compilation", () => {
   });
 
   it("loads explicit nodejs backend config", () => {
-    const backendConfigPath = join(paths.root, "config", "job-search-nodejs-backend.json");
+    const backendConfigPath = fixturePaths.jobSearchNodejsBackend;
     const policy = loadAndCompileScanPolicy({ configPath: backendConfigPath });
 
     expect(policy.roleProfile).toBe("nodejsBackend");
@@ -62,7 +63,7 @@ describe("scan policy compilation", () => {
 
   it("applies profile override over config file", () => {
     const policy = loadAndCompileScanPolicy({
-      configPath: paths.jobSearchConfig,
+      configPath: fixturePaths.jobSearchReact,
       profileOverride: "nodejsBackend",
     });
     expect(policy.roleProfile).toBe("nodejsBackend");
@@ -79,7 +80,7 @@ describe("scan policy compilation", () => {
   });
 
   it("rejects an empty allowed-level policy", () => {
-    const config = loadJobSearchConfigAt(paths.jobSearchConfig);
+    const config = loadJobSearchConfigAt(fixturePaths.jobSearchReact);
     expect(() =>
       JobSearchConfigSchema.parse({
         ...config,
@@ -93,7 +94,7 @@ describe("scan policy compilation", () => {
 
   it("omits absolute config paths from serialized policy", () => {
     const policy = loadAndCompileScanPolicy({
-      configPath: join(paths.root, "config", "job-search-nodejs-backend.json"),
+      configPath: fixturePaths.jobSearchNodejsBackend,
     });
     const serialized = serializeScanPolicy(policy);
 
@@ -203,7 +204,7 @@ describe("role matching", () => {
 describe("level exclusions", () => {
   it("excludes senior roles for backend policy", () => {
     const policy = loadAndCompileScanPolicy({
-      configPath: join(paths.root, "config", "job-search-nodejs-backend.json"),
+      configPath: fixturePaths.jobSearchNodejsBackend,
     });
     const posting = makePosting({
       title: "Senior Node.js Backend Engineer",
@@ -216,7 +217,7 @@ describe("level exclusions", () => {
   });
 
   it("allows senior roles for react policy", () => {
-    const policy = loadAndCompileScanPolicy({ configPath: paths.jobSearchConfig });
+    const policy = loadAndCompileScanPolicy({ configPath: fixturePaths.jobSearchReact });
     const posting = makePosting({
       title: "Senior Frontend Engineer",
       description: "React, TypeScript, remote worldwide.",
@@ -317,7 +318,7 @@ describe("geo policy booleans", () => {
 describe("report policy agreement", () => {
   it("serializes the effective policy used for filtering", () => {
     const policy = loadAndCompileScanPolicy({
-      configPath: join(paths.root, "config", "job-search-nodejs-backend.json"),
+      configPath: fixturePaths.jobSearchNodejsBackend,
     });
     const posting = makePosting({
       title: "Mid Node.js Backend Engineer",
@@ -346,7 +347,7 @@ describe("report policy agreement", () => {
 describe("profile-specific board filtering", () => {
   it("excludes react roles under backend policy", () => {
     const policy = loadAndCompileScanPolicy({
-      configPath: join(paths.root, "config", "job-search-nodejs-backend.json"),
+      configPath: fixturePaths.jobSearchNodejsBackend,
     });
     const posting = makePosting({
       title: "Senior Frontend Engineer",
@@ -359,7 +360,7 @@ describe("profile-specific board filtering", () => {
   });
 
   it("excludes backend roles under react policy", () => {
-    const policy = loadAndCompileScanPolicy({ configPath: paths.jobSearchConfig });
+    const policy = loadAndCompileScanPolicy({ configPath: fixturePaths.jobSearchReact });
     const posting = makePosting({
       title: "Node.js Backend Engineer",
       description: "NestJS APIs. Remote worldwide.",

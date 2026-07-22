@@ -40,6 +40,7 @@ export const JobSearchConfigSchema = z.object({
     levels: z.array(LevelHintSchema).min(1),
   }),
   blocklist: z.array(z.string()).default([]),
+  _comment: z.string().optional(),
 });
 
 export type JobSearchConfig = z.infer<typeof JobSearchConfigSchema>;

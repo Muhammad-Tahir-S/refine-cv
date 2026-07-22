@@ -6,5 +6,5 @@
   "includePullRequests": true,
   "indexOnlyMyCommits": true,
   "commitAuthorNames": ["Your Full Name", "Your Git Name"],
-  "_comment": "Copy to config/github-repos.json. Run pnpm list-repos to populate profile/github-repo-candidates.md, then add selections here."
+  "_comment": "Copy to config/github-repos.json. Set commitAuthorNames to the exact names on your commits (no hardcoded defaults). Run pnpm list-repos to populate profile/github-repo-candidates.md, then add selections here."
 }

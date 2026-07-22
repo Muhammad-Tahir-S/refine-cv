@@ -5,8 +5,6 @@ export type CommitAuthorIdentity = {
   commitNames: string[];
 };
 
-const DEFAULT_COMMIT_NAMES = ["Muhammad-Tahir Sanuth", "Muhammad-Tahir"];
-
 export async function resolveCommitAuthorIdentity(
   octokit: Octokit,
   githubUsername?: string,
@@ -25,10 +23,7 @@ export async function resolveCommitAuthorIdentity(
     /* token may lack user scope; username + commit names still apply */
   }
 
-  const commitNames = new Set<string>([
-    ...DEFAULT_COMMIT_NAMES,
-    ...extraNames.filter(Boolean),
-  ]);
+  const commitNames = new Set<string>(extraNames.filter(Boolean));
 
   return {
     githubLogins: [...githubLogins],

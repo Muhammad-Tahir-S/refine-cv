@@ -6,7 +6,7 @@
     "workPermitCountries": ["Nigeria"]
   },
   "geoEligibility": {
-    "summary": "Nigerian citizen with Nigeria work permit only — no EU/UK/US right to work",
+    "summary": "Test fixture — Nigerian citizen with Nigeria work permit only",
     "acceptGlobalRemote": true,
     "acceptEmeaOnlyWhenAfricaMentioned": true,
     "defaultEmeaToVerify": true
@@ -32,6 +32,5 @@
     "Metabase",
     "Canonical",
     "Micro1"
-  ],
-  "_comment": "Copy to config/job-search-nodejs-backend.json. Geo classification in src/lib/jobs/geo.ts is Nigeria-focused — edit applicant fields for your situation; other countries need geo.ts changes."
+  ]
 }

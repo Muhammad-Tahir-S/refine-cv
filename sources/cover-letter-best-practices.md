@@ -105,15 +105,27 @@ Parts:
 - Citing a company blog post or launch not actually verified
 - Promoting `needs-your-confirmation` GitHub bullets without user approval
 
+### Rule: Anchor tailored prose in commit/PR history, not CV paraphrase
+
+**Why:** Generic letters and CVs that restate `base-cv-enhanced.md` read mass-produced. Merged PR titles in `profile/github-index.json` supply concrete shipped artifacts (components, screens, fixes) that reviewers cannot get from the baseline CV alone. See [evidence-hierarchy.md](evidence-hierarchy.md).
+
+**Source IDs:** _(workflow guardrail)_
+
+**Anti-patterns:**
+- Drafting cover letters or tailored bullets without grepping `github-index.json` first (**CV whiffing**)
+- Vague UI claims ("matched design", "pixel-perfect screens") with no named PR or component
+- Body paragraphs traceable only to CV bullets, not to index log rows
+
 ---
 
 ## Checklist for `cover-letter-report.md`
 
+- [ ] **Index search log** present (JD terms grep'd in `github-index.json`; ≥3 merged PRs or documented gaps)
 - [ ] Exact role (and req number) named in the opening
 - [ ] One verified proof point in the first paragraph
 - [ ] Body = one anchor example with constraint, decision, shipped result
 - [ ] Why-this-company names something specific and real
-- [ ] No CV repetition; letter adds detail the CV lacks
+- [ ] No CV repetition; letter adds detail from PR history the CV lacks
 - [ ] 250–400 words (≈300 or less for engineering roles), one page
 - [ ] Named greeting or "Dear Hiring Manager"; no "To Whom It May Concern"
 - [ ] Links in a block below the sign-off

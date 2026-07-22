@@ -49,6 +49,7 @@ import {
 import type { JobPosting } from "../../src/lib/jobs/types.ts";
 import { normalizeRawPosting } from "../../src/lib/jobs/normalize.ts";
 import { paths } from "../../src/lib/paths.ts";
+import { fixturePaths } from "./helpers/fixture-paths.ts";
 
 const tempDirs: string[] = [];
 
@@ -465,7 +466,7 @@ describe("runJobScan durability ordering", () => {
     const sourcePollStatePath = join(root, "source-poll-state.json");
     const lockPath = join(root, "job-scan.lock");
     const posting = samplePosting();
-    const policy = loadAndCompileScanPolicy({ configPath: paths.jobSearchConfig });
+    const policy = loadAndCompileScanPolicy({ configPath: fixturePaths.jobSearchReact });
     const policyBytes = '{"snapshot":"job-search-v1"}\n';
     const sourceBytes = '{"snapshot":"job-sources-v1"}\n';
     const source = {
@@ -551,7 +552,7 @@ describe("runJobScan durability ordering", () => {
 
     await expect(
       runJobScan({
-        configPath: paths.jobSearchConfig,
+        configPath: fixturePaths.jobSearchReact,
         paths: {
           jobsDir,
           scanStatePath,
@@ -587,7 +588,7 @@ describe("runJobScan durability ordering", () => {
     const posting = samplePosting();
 
     const result = await runJobScan({
-      configPath: paths.jobSearchConfig,
+      configPath: fixturePaths.jobSearchReact,
       paths: {
         jobsDir,
         scanStatePath,
@@ -632,7 +633,7 @@ describe("runJobScan durability ordering", () => {
 
       await expect(
         runJobScan({
-          configPath: paths.jobSearchConfig,
+          configPath: fixturePaths.jobSearchReact,
           paths: {
             jobsDir,
             scanStatePath,

@@ -14,7 +14,7 @@ import { decodeHtmlEntities, normalizeRawPosting } from "../../src/lib/jobs/norm
 import { renderScanReport } from "../../src/lib/jobs/report.ts";
 import { loadAndCompileScanPolicy, serializeScanPolicy } from "../../src/lib/jobs/scan-policy.ts";
 import type { JobPosting } from "../../src/lib/jobs/types.ts";
-import { paths } from "../../src/lib/paths.ts";
+import { fixturePaths } from "./helpers/fixture-paths.ts";
 import { partitionScanResults } from "../../src/lib/jobs/pipeline.ts";
 import { makeScanRunResult } from "./helpers/scan-result-fixture.js";
 
@@ -151,7 +151,7 @@ describe("wwr rss parser", () => {
 
 describe("report", () => {
   it("includes all matched listings in markdown tables", () => {
-    const policy = loadAndCompileScanPolicy({ configPath: paths.jobSearchConfig });
+    const policy = loadAndCompileScanPolicy({ configPath: fixturePaths.jobSearchReact });
     const posting = normalizeRawPosting(
       {
         sourceId: "jobicy",
@@ -234,7 +234,7 @@ describe("partitionScanResults", () => {
 
 describe("filter", () => {
   it("matches react frontend roles", () => {
-    const policy = loadAndCompileScanPolicy({ configPath: paths.jobSearchConfig });
+    const policy = loadAndCompileScanPolicy({ configPath: fixturePaths.jobSearchReact });
     const base: JobPosting = normalizeRawPosting(
       {
         sourceId: "remotive",

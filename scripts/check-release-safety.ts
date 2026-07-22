@@ -21,7 +21,7 @@ const TRACKED_PERSONAL_PATHS: Array<{ label: string; test: (path: string) => boo
   },
   {
     label: "job application artifact",
-    test: (path) => path.startsWith("jobs/"),
+    test: (path) => path.startsWith("jobs/") && path !== "jobs/.gitkeep",
   },
   {
     label: "personal GitHub config",

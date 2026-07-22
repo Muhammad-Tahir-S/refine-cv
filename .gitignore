@@ -31,6 +31,7 @@ config/job-search-nodejs-backend.json
 
 # Application artifacts (JD, pitches, cover letters, scan outputs)
 jobs/**
+!jobs/.gitkeep
 
 # Optional local overrides
 profile/local-notes.md

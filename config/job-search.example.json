@@ -1,14 +1,14 @@
 {
   "version": 1,
   "applicant": {
-    "location": "City, Country",
-    "citizenship": "Country",
-    "workPermitCountries": ["Country"]
+    "location": "Lagos, Nigeria",
+    "citizenship": "Nigeria",
+    "workPermitCountries": ["Nigeria"]
   },
   "geoEligibility": {
-    "summary": "Describe citizenship and work-permit constraints for geo filtering",
+    "summary": "Nigerian citizen with Nigeria work permit only — no EU/UK/US right to work",
     "acceptGlobalRemote": true,
-    "acceptEmeaOnlyWhenAfricaMentioned": false,
+    "acceptEmeaOnlyWhenAfricaMentioned": true,
     "defaultEmeaToVerify": true
   },
   "roleFilters": {
@@ -33,5 +33,5 @@
     "Canonical",
     "Micro1"
   ],
-  "_comment": "Copy to config/job-search.json and edit applicant + geoEligibility for your situation."
+  "_comment": "Copy to config/job-search.json. Geo classification in src/lib/jobs/geo.ts is Nigeria-focused — edit applicant fields for your situation; other countries need geo.ts changes."
 }

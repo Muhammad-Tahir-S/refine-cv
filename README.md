@@ -4,7 +4,7 @@ Private workflow for tailoring CVs and application prose to job descriptions. Us
 
 Built with **TypeScript** and **pnpm** (no Python or shell scripts).
 
-**Keep this repository private.** It may contain PII (CV, questionnaire, job descriptions).
+**Keep this repository private** until git history is rewritten. Tip-of-tree no longer tracks CVs, questionnaires, job folders, or personal configs (`profile/*` except onboarding, `jobs/**`, `config/github-repos.json`, `config/job-search*.json` are gitignored). Older commits may still contain PII.
 
 ---
 
@@ -25,6 +25,7 @@ cp config/github-repos.example.json config/github-repos.json
 cp config/job-search.example.json config/job-search.json
 cp config/job-search-nodejs-backend.example.json config/job-search-nodejs-backend.json
 cp .env.example .env   # optional — or use pnpm auth:github
+# Edit config/job-search*.json applicant + geo fields. Geo matching in src/lib/jobs/geo.ts is Nigeria-focused.
 
 pnpm setup:pdf   # optional — Chromium for PDF export (pnpm render-cv)
 pnpm setup:linkedin  # optional — Chrome for LinkedIn discovery
@@ -112,9 +113,9 @@ Tailor your CV to a specific job description with keyword mapping and match repo
 ```
 Paste JD in chat → /tailor-cv
   → jobs/YYYY-MM-DD-company-role/job-description.md
-  → keyword map + evidence mapping
-  → jobs/…/tailored-cv.md        (writing-style polish pass)
-  → jobs/…/match-report.md       (keyword table + Style pass)
+  → keyword map + grep profile/github-index.json (see sources/evidence-hierarchy.md)
+  → jobs/…/match-report.md       (Index search log + keyword table + Style pass)
+  → jobs/…/tailored-cv.md        (bullets from merged PRs, not CV paraphrase)
   → optional cover-letter-hooks.md / cover-letter.md
   → pnpm render-cv jobs/…/tailored-cv.md  → tailored-cv.pdf
   → optional /avoid-ai-writing   (deep audit before send)
@@ -139,12 +140,13 @@ Paste JD in chat → /tailor-cv
 |------|---------|
 | `tailored-cv.md` | JD-aligned CV (Markdown) |
 | `tailored-cv.pdf` | Export for applications |
-| `match-report.md` | Keyword coverage, risks, ATS checklist, **Style pass** |
+| `match-report.md` | Index search log, keyword coverage, risks, ATS checklist, **Style pass** |
 | `cover-letter-hooks.md` | Optional 3–5 factual bullets |
 | `cover-letter.md` | Optional full letter (first person) |
 
 **Authorities**
 
+- `sources/evidence-hierarchy.md` — **index-first tailoring**; grep `github-index.json` before prose; CV whiffing is a hard fail
 - `sources/cv-best-practices.md` — ATS and career-center rules
 - `sources/writing-style.md` — anti-AI rules at draft time (see feature 3)
 
@@ -519,7 +521,9 @@ Private and employer repos are indexed for **metadata only** (commit subjects, P
 
 - `profile/*` except `profile/ONBOARDING.md` — CV, questionnaire, GitHub index, Toptal snapshots
 - `config/github-repos.json`, `config/job-search.json`, `config/job-search-nodejs-backend.json` — your repos and geo criteria
-- `jobs/**` — job descriptions, tailored CVs, pitches, cover letters, scan reports
+- `jobs/**` except `jobs/.gitkeep` — job descriptions, tailored CVs, pitches, cover letters, scan reports
 - `.env` and token files
 
-Copy tracked `*.example.json` templates on first setup (see Setup above). CI runs `pnpm check:release` to fail if secrets or personal paths are tracked. **Keep this repository private** — older commits may still contain PII until history is rewritten.
+Copy tracked `*.example.json` templates on first setup (see Setup above). CI runs `pnpm check:release` to fail if secrets or personal paths are tracked.
+
+**Going public:** tip-of-tree is scrubbed, but **git history still contains PII** (CVs, indexes, job scans). Before making the repo public, rewrite history (for example `git filter-repo`) to drop `profile/`, `jobs/`, and former personal config blobs, then force-push only with an explicit plan and backup. Until then, keep the repository private.

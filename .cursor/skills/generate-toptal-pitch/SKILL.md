@@ -16,11 +16,13 @@ Per-job application pitch — not full CV tailoring.
 **Load in order (required):**
 
 1. [sources/writing-style.md](../../../sources/writing-style.md) — anti-AI prose; polish pass before saving
-2. [sources/toptal-guides/job-application-matching-handbook.md](../../../sources/toptal-guides/job-application-matching-handbook.md) — **§10–12 are the pitch basis**; also §9 Application Questions
+2. [sources/evidence-hierarchy.md](../../../sources/evidence-hierarchy.md) — **mandatory** index-first evidence
+3. [sources/toptal-guides/job-application-matching-handbook.md](../../../sources/toptal-guides/job-application-matching-handbook.md) — **§10–12 are the pitch basis**; also §9 Application Questions
 3. [sources/toptal-best-practices.md](../../../sources/toptal-best-practices.md) — **§3 encodes the pitch doctrine as citable rules; §7 is the paste checklist** (this skill points here rather than restating the rules)
 4. [sources/toptal-references.json](../../../sources/toptal-references.json) for citations
 
-- Base CV: `profile/base-cv-enhanced.md` (fallback: `profile/base-cv.md`)
+- `profile/github-index.json` — **grep before drafting**; primary source for pitch examples and projects
+- Base CV: `profile/base-cv-enhanced.md` (fallback: `profile/base-cv.md`) — employment scaffold only
 - `profile/github-summary.md`, `profile/questionnaire.md`, `profile/gap-report.md` (if present)
 - Rules: [.cursor/rules/toptal-writing.mdc](../../rules/toptal-writing.mdc), [.cursor/rules/writing-style.mdc](../../rules/writing-style.mdc)
 
@@ -42,23 +44,27 @@ Create `job-description.md` (full JD), `pitch.md` (pending), `pitch-match-report
 
 List: required skills/technologies (verbatim phrases), nice-to-haves, seniority and scope signals, domain/industry signals, and repeated keywords (weight higher).
 
-### 4. Map evidence to JD
+### 4. Index search (mandatory)
+
+Follow [sources/evidence-hierarchy.md](../../../sources/evidence-hierarchy.md) §2. Grep `profile/github-index.json` for JD keywords; record **Index search log** in `pitch-match-report.md` before step 5.
+
+### 5. Map evidence to JD
 
 | Source | Use for |
 |--------|---------|
-| `base-cv-enhanced.md` | Employment facts, titles, stack |
-| `github-summary.md` | Technical proof; respect `verified-from-github` vs `needs-your-confirmation` |
+| `github-index.json` | **Primary** — pitch examples, 2–3 projects, specific shipped artifacts |
+| `base-cv-enhanced.md` | Employment facts, titles, stack list |
+| `github-summary.md` | Pointer into index |
 | `questionnaire.md` | Metrics, red lines, overlap/availability |
-| `github-index.json` | Grep for JD terms (commits, PR subjects) when needed |
 | `gap-report.md` | Known gaps to avoid claiming |
 
-**Never invent** employers, projects, metrics, or skills (best-practices §6).
+**Never invent** employers, projects, metrics, or skills (best-practices §6). Pitch examples must cite index PRs, not CV bullet paraphrase.
 
-### 5. Gate — apply the pitch doctrine before drafting
+### 6. Gate — apply the pitch doctrine before drafting
 
 **Do not write the pitch until this step is done.** Map verified evidence to the handbook §10–12 framework as encoded in [toptal-best-practices.md](../../../sources/toptal-best-practices.md) §3 (goals, focus, wow factor, strong §11 / weak §12 patterns). From the handbook §10 question table, decide which themes *this* JD makes relevant — cover those, defer the rest to application answers, or omit for lack of evidence. Do not cram every theme.
 
-### 6. Write `pitch.md`
+### 7. Write `pitch.md`
 
 - **Main paragraph** — one block, third person, ~**500 characters** when the form is character-limited (§10 wow factor). If the form allows more, stay dense and client-focused (~120 words max unless the JD invites longer).
 - Satisfy every applicable rule in [toptal-best-practices.md](../../../sources/toptal-best-practices.md) §3: client-focused fit for *this* posting, depth in industry/relevant skill/similar needs, a personal story with **specific examples**, **2–3 evidence-backed projects** with bare URLs, quantified results where verified, skills ranked and qualified honestly, one notable achievement, genuine enthusiasm, and availability/overlap/interview timing when the JD asks.
@@ -80,9 +86,10 @@ All **paste-ready content** in `pitch.md` — main pitch, short pitch, applicati
 
 Run the [writing-style.md](../../../sources/writing-style.md) §4 polish pass on `pitch.md` before continuing. Optionally run `/avoid-ai-writing` in detect mode before handoff.
 
-### 7. Write `pitch-match-report.md`
+### 8. Write `pitch-match-report.md`
 
-1. **Pitch doctrine coverage** — handbook §10 themes | covered in pitch? | evidence source | notes (mark N/A when not JD-relevant or unevidenced)
+1. **Index search log** — required (evidence-hierarchy.md §4)
+2. **Pitch doctrine coverage** — handbook §10 themes | covered in pitch? | index PR # / evidence source | notes (mark N/A when not JD-relevant or unevidenced)
 2. **Keyword coverage** — JD term | present? | where in evidence | notes
 3. **Risks** — overclaiming, weak overlap, voice/§12 weak-pattern risks
 4. **Gaps** — unsupported skills/domains (honest list)
@@ -92,6 +99,6 @@ Run the [writing-style.md](../../../sources/writing-style.md) §4 polish pass on
 
 Reuse the table shape from existing job `match-report.md` / `pitch-match-report.md` files where helpful.
 
-### 8. Handoff
+### 9. Handoff
 
 Report keyword match highlights, gaps, and any **questions** before the user submits. The user may run `/tailor-cv` separately if they also need a tailored CV PDF for the same role — do **not** auto-run it.

@@ -47,7 +47,7 @@ import {
   loadJobSourcesConfig,
   parseJobSourcesConfig,
 } from "../../src/lib/jobs/sources/registry.ts";
-import { paths } from "../../src/lib/paths.ts";
+import { fixturePaths } from "./helpers/fixture-paths.ts";
 
 const fixturesDir = join(import.meta.dirname, "fixtures");
 
@@ -195,7 +195,7 @@ describe("board adapter fixtures", () => {
     expect(result.postings.some((posting) => posting.title.includes("sales manager"))).toBe(true);
 
     const backendPolicy = loadAndCompileScanPolicy({
-      configPath: join(paths.root, "config", "job-search-nodejs-backend.json"),
+      configPath: fixturePaths.jobSearchNodejsBackend,
     });
     const backendMatches = filterPostings(
       result.postings.map((posting) =>

@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { describe, expect, it, afterEach } from "vitest";
 import { join } from "node:path";
 import { paths } from "../../src/lib/paths.ts";
+import { fixturePaths } from "./helpers/fixture-paths.ts";
 import { SCAN_ARTIFACT_NAMES } from "../../src/lib/jobs/artifact-names.ts";
 import {
   assertNoSensitivePaths,
@@ -89,7 +90,7 @@ describe("manifest fingerprints", () => {
 
   it("reads repo-relative config labels and metadata without git", () => {
     const metadata = readRunEnvironmentMetadata(
-      paths.jobSearchConfig,
+      fixturePaths.jobSearchReact,
       paths.jobSourcesConfig,
       {
         readApplicationVersion: () => "0.1.0-test",
@@ -115,7 +116,7 @@ describe("manifest fingerprints", () => {
 
 describe("run manifest", () => {
   it("builds a versioned manifest with UTC duration and pipeline totals", () => {
-    const policy = loadAndCompileScanPolicy({ configPath: paths.jobSearchConfig });
+    const policy = loadAndCompileScanPolicy({ configPath: fixturePaths.jobSearchReact });
     const posting = normalizeRawPosting(
       {
         sourceId: "remoteok",

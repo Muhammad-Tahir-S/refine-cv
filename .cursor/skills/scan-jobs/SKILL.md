@@ -17,7 +17,7 @@ description: >-
 - Scan state (auto-created): `~/.config/refine-cv/scan-state.json` — v3 profile-aware seen maps (`reactFrontend`, `nodejsBackend`)
 - Source poll cadence (auto-created): `~/.config/refine-cv/source-poll-state.json` — v2 profile-aware per-source attempt / success / failure timestamps
 - Job lifecycle (auto-synced from report checkboxes): `~/.config/refine-cv/applied-jobs.json` — v2 schema with `applied`, `dismissed`, `expired` maps
-- Criteria: React/frontend remote roles for a Nigerian applicant (`config/job-search.json`); Nigeria-eligible vs verify-geo vs likely-excluded geo tiers
+- Criteria: React/frontend remote roles using geo tiers from `config/job-search.json` (geo engine in `src/lib/jobs/geo.ts` is Nigeria-focused: nigeria-eligible vs verify-geo vs likely-excluded)
 
 ## Workflow
 
@@ -34,7 +34,7 @@ This:
 
 1. Fetches enabled boards in `config/job-sources.json` via public JSON/RSS APIs (no login). Each source's `minPollHours` cadence is enforced from `~/.config/refine-cv/source-poll-state.json` unless `--force` is passed.
 2. Applies employer blocklist from `config/job-search.json`
-3. Filters for React/frontend + Nigeria-focused geo eligibility (`src/lib/jobs/geo.ts`)
+3. Filters for React/frontend + Nigeria-focused geo eligibility (`src/lib/jobs/geo.ts` — not a generic country matcher yet)
 4. Merges applied checkboxes from prior `jobs/*-job-scan/report.md` files
 5. Dedupes against scan state; reports **new** listings only
 6. Writes `jobs/{UTC-timestamp}-{role-profile}-job-scan-{suffix}/report.md`, `scan-result.json`, and `manifest.json` (staging → atomic publish; never overwrites prior runs)

@@ -16,8 +16,8 @@
 - Use a comma, a period (split into two sentences), or parentheses instead.
 - In project-link lines, use a colon or hyphen with spaces: `https://example.com - description`.
 
-**Before:** `Muhammad-Tahir — a frontend engineer who builds…`  
-**After:** `Muhammad-Tahir is a frontend engineer who builds…` or `Muhammad-Tahir, a frontend engineer, builds…`
+**Before:** `Alex — a frontend engineer who builds…`  
+**After:** `Alex is a frontend engineer who builds…` or `Alex, a frontend engineer, builds…`
 
 ### Contrast clichés
 
@@ -121,10 +121,10 @@ If a check fails, fix the prose and re-run before handoff.
 ### Cover letter opening
 
 **Before:**  
-`I'm Muhammad-Tahir — a frontend engineer. I'm writing as a potential colleague, not just an applicant.`
+`I'm Alex — a frontend engineer. I'm writing as a potential colleague, not just an applicant.`
 
 **After:**  
-`I'm Muhammad-Tahir, a frontend engineer with five years on TypeScript and React for international B2B SaaS teams. I'm writing to introduce myself as a potential colleague.`
+`I'm Alex, a frontend engineer with five years on TypeScript and React for international B2B SaaS teams. I'm writing to introduce myself as a potential colleague.`
 
 ### Product fit paragraph
 

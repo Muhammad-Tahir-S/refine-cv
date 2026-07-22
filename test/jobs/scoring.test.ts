@@ -3,7 +3,7 @@ import { filterPostings } from "../../src/lib/jobs/filter.ts";
 import { normalizeRawPosting } from "../../src/lib/jobs/normalize.ts";
 import { loadAndCompileScanPolicy } from "../../src/lib/jobs/scan-policy.ts";
 import type { JobPosting } from "../../src/lib/jobs/types.ts";
-import { paths } from "../../src/lib/paths.ts";
+import { fixturePaths } from "./helpers/fixture-paths.ts";
 import {
   compareRankedJobs,
   computeEffectivenessMetrics,
@@ -280,9 +280,9 @@ describe("rankMatchedJobs", () => {
 
 describe("hard filter independence", () => {
   it("does not use scores as eligibility gates", () => {
-    const reactPolicy = loadAndCompileScanPolicy({ configPath: paths.jobSearchConfig });
+    const reactPolicy = loadAndCompileScanPolicy({ configPath: fixturePaths.jobSearchReact });
     const backendPolicy = loadAndCompileScanPolicy({
-      configPath: paths.jobSearchConfig,
+      configPath: fixturePaths.jobSearchReact,
       profileOverride: "nodejsBackend",
     });
 

@@ -8,9 +8,12 @@ These files are gitignored. Copy from the tracked examples if missing:
 cp config/github-repos.example.json config/github-repos.json
 cp config/job-search.example.json config/job-search.json
 cp config/job-search-nodejs-backend.example.json config/job-search-nodejs-backend.json
+cp .env.example .env   # optional — or use pnpm auth:github
 ```
 
-Edit `config/job-search.json` for your location and work-permit constraints before running job scans.
+Edit `config/job-search.json` (and the backend profile if you use it) for your location and work-permit constraints before running job scans. Geo classification in `src/lib/jobs/geo.ts` is **Nigeria-focused**; other countries need code changes there.
+
+In `config/github-repos.json`, set `commitAuthorNames` to the exact names that appear on your Git commits.
 
 ## Step 1 — Master CV
 

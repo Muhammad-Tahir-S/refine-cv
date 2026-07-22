@@ -20,6 +20,7 @@ import {
 } from "../../src/lib/jobs/source-poll-state.ts";
 import type { JobSourceEntry, SourceStats } from "../../src/lib/jobs/types.ts";
 import { paths } from "../../src/lib/paths.ts";
+import { fixturePaths } from "./helpers/fixture-paths.ts";
 
 const tempDirs: string[] = [];
 
@@ -141,7 +142,7 @@ describe("source poll cadence", () => {
 
 describe("fetchAllBoardPostings cadence", () => {
   it("marks cadence-skipped sources without fetch errors", async () => {
-    const policy = loadAndCompileScanPolicy({ configPath: paths.jobSearchConfig });
+    const policy = loadAndCompileScanPolicy({ configPath: fixturePaths.jobSearchReact });
     const sources: JobSourceEntry[] = [
       {
         id: "alpha",
@@ -182,7 +183,7 @@ describe("fetchAllBoardPostings cadence", () => {
   });
 
   it("preserves configured source order under concurrent workers", async () => {
-    const policy = loadAndCompileScanPolicy({ configPath: paths.jobSearchConfig });
+    const policy = loadAndCompileScanPolicy({ configPath: fixturePaths.jobSearchReact });
     const sources: JobSourceEntry[] = [
       { id: "s1", adapter: "jobicy", enabled: true, minPollHours: 0 },
       { id: "s2", adapter: "remotive", enabled: true, minPollHours: 0 },
@@ -232,7 +233,7 @@ describe("fetchAllBoardPostings cadence", () => {
 
   it("does not let React cadence suppress a backend profile fetch", async () => {
     const policy = loadAndCompileScanPolicy({
-      configPath: paths.jobSearchConfig,
+      configPath: fixturePaths.jobSearchReact,
       profileOverride: "nodejsBackend",
     });
     const fetch = vi.fn(async (source: JobSourceEntry) => ({
@@ -325,7 +326,7 @@ describe("runJobScan poll-state durability", () => {
 
     await expect(
       runJobScan({
-        configPath: paths.jobSearchConfig,
+        configPath: fixturePaths.jobSearchReact,
         paths: {
           jobsDir: join(root, "jobs"),
           scanStatePath: join(root, "scan-state.json"),

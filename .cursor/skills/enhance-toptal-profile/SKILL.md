@@ -16,7 +16,8 @@ Baseline profile optimization only — not per-job tailoring.
 **Load in order (required):**
 
 1. [sources/writing-style.md](../../../sources/writing-style.md) — anti-AI prose; polish pass before saving
-2. [sources/toptal-guides/developer-profile-creation-guide.md](../../../sources/toptal-guides/developer-profile-creation-guide.md) — primary authority for profile sections
+2. [sources/evidence-hierarchy.md](../../../sources/evidence-hierarchy.md) — index-first evidence for portfolio and About examples
+3. [sources/toptal-guides/developer-profile-creation-guide.md](../../../sources/toptal-guides/developer-profile-creation-guide.md) — primary authority for profile sections
 3. [sources/toptal-guides/job-application-matching-handbook.md](../../../sources/toptal-guides/job-application-matching-handbook.md) — §8 profile requirements
 4. [sources/toptal-best-practices.md](../../../sources/toptal-best-practices.md) — **§2 profile rules, §8 paste checklist** (this skill points here rather than restating the rules)
 5. [sources/toptal-references.json](../../../sources/toptal-references.json) for citations
@@ -37,11 +38,14 @@ Ask the user to paste their current profile (bio, skills with levels, portfolio 
 
 | Source | Use for |
 |--------|---------|
+| `github-index.json` | **Primary** — portfolio bullets, About achievements, named shipped work |
 | `toptal-profile-current.md` | What is live today; diff baseline |
-| `base-cv-enhanced.md` | Employment facts, titles, stack |
-| `github-summary.md` | Technical proof; respect `verified-from-github` vs `needs-your-confirmation` |
+| `base-cv-enhanced.md` | Employment facts, titles, dates only |
+| `github-summary.md` | Pointer into index |
 | `questionnaire.md` | Metrics, red lines, target-role emphasis |
 | `gap-report.md` | Known unsupported claims to avoid |
+
+Grep the index before writing portfolio entries; do not paraphrase CV bullets without PR referents.
 
 ### 3. Write `profile/toptal-profile-enhanced.md`
 

@@ -18,6 +18,10 @@ describe("scanTrackedPath", () => {
     ]);
   });
 
+  it("allows jobs/.gitkeep", () => {
+    expect(scanTrackedPath("jobs/.gitkeep")).toEqual([]);
+  });
+
   it("flags tracked personal config", () => {
     expect(scanTrackedPath("config/github-repos.json")).toEqual([
       "config/github-repos.json: tracked personal GitHub config",
@@ -25,11 +29,17 @@ describe("scanTrackedPath", () => {
     expect(scanTrackedPath("config/job-search.json")).toEqual([
       "config/job-search.json: tracked personal job search config",
     ]);
+    expect(scanTrackedPath("config/job-search-nodejs-backend.json")).toEqual([
+      "config/job-search-nodejs-backend.json: tracked personal job search config",
+    ]);
   });
 
   it("allows tracked example configs", () => {
     expect(scanTrackedPath("config/github-repos.example.json")).toEqual([]);
     expect(scanTrackedPath("config/job-search.example.json")).toEqual([]);
+    expect(scanTrackedPath("config/job-search-nodejs-backend.example.json")).toEqual(
+      [],
+    );
     expect(scanTrackedPath(".env.example")).toEqual([]);
   });
 
