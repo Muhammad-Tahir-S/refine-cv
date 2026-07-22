@@ -1,19 +1,19 @@
 {
   "version": 1,
   "applicant": {
-    "location": "Lagos, Nigeria",
-    "citizenship": "Nigeria",
-    "workPermitCountries": ["Nigeria"]
+    "location": "City, Country",
+    "citizenship": "Country",
+    "workPermitCountries": ["Country"]
   },
   "geoEligibility": {
-    "summary": "Nigerian citizen with Nigeria work permit only — no EU/UK/US right to work",
+    "summary": "Describe citizenship and work-permit constraints for geo filtering",
     "acceptGlobalRemote": true,
-    "acceptEmeaOnlyWhenAfricaMentioned": true,
+    "acceptEmeaOnlyWhenAfricaMentioned": false,
     "defaultEmeaToVerify": true
   },
   "roleFilters": {
-    "reactFrontend": true,
-    "levels": ["junior", "mid", "senior", "staff_lead", "unknown"]
+    "profile": "nodejsBackend",
+    "levels": ["junior", "mid", "unknown"]
   },
   "blocklist": [
     "DataAnnotation",
@@ -32,5 +32,6 @@
     "Metabase",
     "Canonical",
     "Micro1"
-  ]
+  ],
+  "_comment": "Copy to config/job-search-nodejs-backend.json and edit applicant + geoEligibility for your situation."
 }

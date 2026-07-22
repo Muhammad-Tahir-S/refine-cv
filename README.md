@@ -19,6 +19,13 @@ Built with **TypeScript** and **pnpm** (no Python or shell scripts).
 ```bash
 nvm use          # optional
 pnpm install
+
+# First-time local config (gitignored — copy from tracked examples)
+cp config/github-repos.example.json config/github-repos.json
+cp config/job-search.example.json config/job-search.json
+cp config/job-search-nodejs-backend.example.json config/job-search-nodejs-backend.json
+cp .env.example .env   # optional — or use pnpm auth:github
+
 pnpm setup:pdf   # optional — Chromium for PDF export (pnpm render-cv)
 pnpm setup:linkedin  # optional — Chrome for LinkedIn discovery
 pnpm build
@@ -33,7 +40,7 @@ pnpm validate    # check onboarding readiness
 |-------|------|
 | `src/bin/` | CLI scripts (extract, index, scan, render) |
 | `profile/` | Your CV, questionnaire, GitHub index, Toptal snapshots |
-| `config/` | GitHub repo list, job board sources (`job-sources.json`) and search policy (`job-search.json`) |
+| `config/` | GitHub repo list and search policy (local, gitignored); board registry (`job-sources.json`, tracked) |
 | `sources/` | Writing authorities (CV, Toptal, anti-AI style) |
 | `jobs/` | One folder per application or job-scan run |
 | `.cursor/skills/` | Agent workflows |
@@ -471,9 +478,9 @@ For Toptal: replace steps 2–4 with `/toptal-pitch` (+ optional `/avoid-ai-writ
 | `profile/base-cv-enhanced.md` | Enhanced base for tailoring |
 | `profile/questionnaire.md` | Metrics, red lines, writing voice |
 | `profile/github-summary.md` | Indexed evidence summary |
-| `config/github-repos.json` | Repos to index |
+| `config/github-repos.example.json` | Template → copy to `config/github-repos.json` (gitignored) |
+| `config/job-search.example.json` | Template → copy to `config/job-search.json` (gitignored) |
 | `config/job-sources.json` | Job scan board registry |
-| `config/job-search.json` | Geo criteria and employer blocklist |
 | `docs/job-board-sources.md` | Public board cadence and attribution |
 | `docs/session-job-boards-backlog.md` | Future session-required boards |
 | `sources/cv-best-practices.md` | CV/ATS rules |
@@ -508,5 +515,11 @@ pnpm auth:github
 
 Private and employer repos are indexed for **metadata only** (commit subjects, PR titles, languages). Tailored outputs must **not** include proprietary source code. See `profile/questionnaire.md` red lines.
 
-- `.env` and token files are gitignored — CI runs `pnpm check:release` to fail if secrets are tracked.
-- `jobs/**` may contain employer-specific drafts and pasted job descriptions; keep the repository private.
+**Gitignored by default (local only):**
+
+- `profile/*` except `profile/ONBOARDING.md` — CV, questionnaire, GitHub index, Toptal snapshots
+- `config/github-repos.json`, `config/job-search.json`, `config/job-search-nodejs-backend.json` — your repos and geo criteria
+- `jobs/**` — job descriptions, tailored CVs, pitches, cover letters, scan reports
+- `.env` and token files
+
+Copy tracked `*.example.json` templates on first setup (see Setup above). CI runs `pnpm check:release` to fail if secrets or personal paths are tracked. **Keep this repository private** — older commits may still contain PII until history is rewritten.

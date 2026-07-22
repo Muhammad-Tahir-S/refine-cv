@@ -14,6 +14,26 @@ const SECRET_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
   },
 ];
 
+const TRACKED_PERSONAL_PATHS: Array<{ label: string; test: (path: string) => boolean }> = [
+  {
+    label: "personal profile file",
+    test: (path) => path.startsWith("profile/") && path !== "profile/ONBOARDING.md",
+  },
+  {
+    label: "job application artifact",
+    test: (path) => path.startsWith("jobs/"),
+  },
+  {
+    label: "personal GitHub config",
+    test: (path) => path === "config/github-repos.json",
+  },
+  {
+    label: "personal job search config",
+    test: (path) =>
+      path === "config/job-search.json" || path === "config/job-search-nodejs-backend.json",
+  },
+];
+
 function listTrackedFiles(): string[] {
   return execSync("git ls-files -z", { encoding: "utf8" })
     .split("\0")
@@ -22,6 +42,9 @@ function listTrackedFiles(): string[] {
 
 function isTrackedEnvFile(path: string): boolean {
   const base = path.split("/").pop() ?? path;
+  if (base === ".env.example") {
+    return false;
+  }
   if (TRACKED_ENV_PREFIXES.some((prefix) => base === prefix || base.startsWith(`${prefix}.`))) {
     return true;
   }
@@ -31,7 +54,7 @@ function isTrackedEnvFile(path: string): boolean {
   return false;
 }
 
-function scanFile(path: string): string[] {
+export function scanTrackedPath(path: string): string[] {
   const issues: string[] = [];
 
   if (isTrackedEnvFile(path)) {
@@ -39,24 +62,36 @@ function scanFile(path: string): string[] {
     return issues;
   }
 
-  let content: string;
-  try {
-    content = readFileSync(path, "utf8");
-  } catch {
-    return issues;
-  }
-
-  for (const { label, pattern } of SECRET_PATTERNS) {
-    if (pattern.test(content)) {
-      issues.push(`${path}: possible ${label}`);
+  for (const { label, test } of TRACKED_PERSONAL_PATHS) {
+    if (test(path)) {
+      issues.push(`${path}: tracked ${label}`);
+      return issues;
     }
   }
 
   return issues;
 }
 
+function scanFileContent(path: string): string[] {
+  let content: string;
+  try {
+    content = readFileSync(path, "utf8");
+  } catch {
+    return [];
+  }
+
+  const issues: string[] = [];
+  for (const { label, pattern } of SECRET_PATTERNS) {
+    if (pattern.test(content)) {
+      issues.push(`${path}: possible ${label}`);
+    }
+  }
+  return issues;
+}
+
 export function runReleaseSafetyCheck(): number {
-  const issues = listTrackedFiles().flatMap(scanFile);
+  const tracked = listTrackedFiles();
+  const issues = tracked.flatMap((path) => [...scanTrackedPath(path), ...scanFileContent(path)]);
 
   if (issues.length === 0) {
     console.log("Release safety check passed.");

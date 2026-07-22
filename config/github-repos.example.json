@@ -1,0 +1,10 @@
+{
+  "githubUsername": "your-github-username",
+  "repos": [],
+  "maxCommitsPerRepo": 0,
+  "maxPullRequestsPerRepo": 0,
+  "includePullRequests": true,
+  "indexOnlyMyCommits": true,
+  "commitAuthorNames": ["Your Full Name", "Your Git Name"],
+  "_comment": "Copy to config/github-repos.json. Run pnpm list-repos to populate profile/github-repo-candidates.md, then add selections here."
+}
