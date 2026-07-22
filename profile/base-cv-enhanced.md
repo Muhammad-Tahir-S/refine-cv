@@ -33,7 +33,7 @@ TypeScript SaaS consultancy delivering client web products ([codygo.com](https:/
 ### Collabscape — Front-End Engineer (via Bexxle Technologies)  
 **Jul 2024 – Jul 2025** · Lagos, Nigeria (Remote)
 
-Social product for content creators.
+Two-sided marketplace connecting content creators and brand partners.
 
 - Delivered authorization flows, social account connections, calendar grid, and rich post-creation interface on a TypeScript monorepo.
 - Integrated sign-in, sign-up, and create and edit post APIs with calendar and event-detail UI.

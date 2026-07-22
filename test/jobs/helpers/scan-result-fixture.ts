@@ -1,6 +1,9 @@
 import type { ScanRunResult } from "../../../src/lib/jobs/types.ts";
 import { SCAN_ARTIFACT_NAMES } from "../../../src/lib/jobs/artifact-names.ts";
-import { computeEffectivenessMetrics, rankMatchedJobs } from "../../../src/lib/jobs/scoring.ts";
+import {
+  computeEffectivenessMetrics,
+  rankMatchedJobs,
+} from "../../../src/lib/jobs/scoring.ts";
 
 const emptyLifecycle = { applied: 0, dismissed: 0, expired: 0 };
 
@@ -8,7 +11,7 @@ const defaultPolicy: ScanRunResult["policy"] = {
   configLabel: "config/job-search.json",
   roleProfile: "reactFrontend",
   roleProfileLabel: "React / frontend",
-  allowedLevels: ["senior", "staff_lead", "unknown"],
+  allowedLevels: ["mid", "junior", "staff_lead", "unknown"],
   geo: {
     summary: "test",
     acceptGlobalRemote: true,
@@ -79,7 +82,10 @@ export function makeScanRunResult(
   const effectiveness =
     overrides.effectiveness ??
     computeEffectivenessMetrics({
-      policyMatched: base.allMatched.slice(0, base.policyMatched || base.allMatched.length),
+      policyMatched: base.allMatched.slice(
+        0,
+        base.policyMatched || base.allMatched.length,
+      ),
       newJobs: base.newJobs,
       previouslySeen: base.previouslySeen,
       lifecycleSuppressed: base.lifecycleSuppressed,

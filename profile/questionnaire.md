@@ -41,6 +41,7 @@ Updated **2026-07-03** (Full-Stack Engineer baseline).
 ### Collabscape (Jul 2024 – Jul 2025)
 
 - **Product name:** **Collabscape** (public name confirmed).
+- **Product type:** Two-sided marketplace (content creators and brand partners).
 - **Repo:** `Bexxle-Technologies/collabscape-mono-repo`
 
 ### ZeroComplex AI (Aug 2023 – Apr 2024)

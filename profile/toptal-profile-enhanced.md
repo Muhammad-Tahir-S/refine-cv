@@ -155,7 +155,7 @@ Each entry needs a **title**, **2–4 sentence description**, **direct link**, a
 
 ### 4. Collabscape — Social product web app
 
-**Description:** Delivered Collabscape social flows—sign-in/sign-up, create/edit post APIs, calendar grid, homepage UI, and filter integrations—on a TypeScript monorepo for Bexxle Technologies.
+**Description:** Delivered Collabscape two-sided marketplace flows for content creators and brand partners—sign-in/sign-up, create/edit post APIs, calendar grid, homepage UI, and filter integrations—on a TypeScript monorepo for Bexxle Technologies.
 
 **Link:** https://github.com/Bexxle-Technologies/collabscape-mono-repo  
 **Tags:** React, TypeScript, REST, UI implementation
@@ -227,7 +227,7 @@ Use **Full-Stack Engineer** for Codygo and Tempo; **Front-End Engineer** for Col
 
 ### Front-End Engineer · Collabscape (via Bexxle Technologies) · Jul 2024 – Jul 2025
 
-**Description:** Collabscape social product; remote delivery on Bexxle monorepo.
+**Description:** Collabscape two-sided creator marketplace; remote delivery on Bexxle monorepo.
 
 **Bullets:**
 
