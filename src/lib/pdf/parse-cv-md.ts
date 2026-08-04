@@ -202,22 +202,6 @@ function collectUnsupportedConstructDiagnostics(
   return diagnostics;
 }
 
-function isOrphanAfterLastSection(
-  lines: string[],
-  startIndex: number,
-): boolean {
-  let index = startIndex + 1;
-  while (index < lines.length) {
-    const trimmed = (lines[index] ?? "").trim();
-    if (trimmed === "" || HORIZONTAL_RULE_RE.test(trimmed)) {
-      index += 1;
-      continue;
-    }
-    return false;
-  }
-  return true;
-}
-
 function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -434,18 +418,6 @@ function parseCvDocument(
 
       if (currentRole && isRoleMetaLine(currentLine)) {
         currentRole.meta = parseInline(trimmed);
-        index += 1;
-        continue;
-      }
-
-      if (isOrphanAfterLastSection(lines, index)) {
-        diagnostics.push({
-          severity: "warning",
-          code: "orphan_content",
-          message:
-            "Content after the last section heading is ignored by the renderer",
-          line: index + 1,
-        });
         index += 1;
         continue;
       }

@@ -21,7 +21,7 @@ Standalone cover letter from a JD. Not full CV tailoring.
 1. [sources/writing-style.md](../../../sources/writing-style.md) — anti-AI prose rules; applied while drafting, polish pass (§4) before saving
 2. [sources/evidence-hierarchy.md](../../../sources/evidence-hierarchy.md) — **mandatory** index-first evidence; CV whiffing is a hard fail
 3. [sources/cover-letter-best-practices.md](../../../sources/cover-letter-best-practices.md) — structure, length, evidence rules; cite source IDs from [sources/references.json](../../../sources/references.json)
-4. `profile/questionnaire.md` § Writing voice — personal overrides (first person OK; lead with role fit and one verified proof point; no generic enthusiasm closers)
+4. `profile/questionnaire.md` § Writing voice — personal overrides (first person OK; lead with role fit and one verified proof point; no generic enthusiasm closers; **no PR references in `cover-letter.md`**; use questionnaire self-intro phrasing)
 
 **Evidence sources (priority order — see evidence-hierarchy.md):**
 
@@ -93,7 +93,7 @@ Follow [cover-letter-best-practices.md](../../../sources/cover-letter-best-pract
 
 Format:
 
-- First person, direct tone per questionnaire § Writing voice
+- First person, direct tone per questionnaire § Writing voice (self-intro phrasing; **never cite PR numbers or merge history** in the letter — index backs claims internally; describe shipped work in product terms)
 - 250–400 words; target ≈300 or less for engineering roles unless the JD invites longer
 - Named greeting when findable, else `Dear Hiring Manager`
 - GitHub/portfolio links in a block below the sign-off, bare URLs
@@ -142,3 +142,4 @@ not auto-run it.
 - Generic company flattery with no verifiable referent
 - Skipping or soft-skipping the avoid-ai-writing pass
 - Claims that no evidence source supports
+- **PR references in `cover-letter.md`:** PR numbers, "merged PRs," or merge history in employer-facing prose (questionnaire § Writing voice; index is internal only)

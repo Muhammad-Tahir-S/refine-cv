@@ -127,7 +127,7 @@ describe("parseCvMarkdownWithDiagnostics", () => {
     expect(() => parseCvMarkdownWithDiagnostics("No heading here")).toThrow();
   });
 
-  it("reports orphan content outside section headings", () => {
+  it("keeps trailing paragraphs inside the last section", () => {
     const markdown = [
       "# Jane Developer",
       "",
@@ -137,18 +137,15 @@ describe("parseCvMarkdownWithDiagnostics", () => {
       "## Skills",
       "- JavaScript",
       "",
-      "Orphan trailing content after the last section",
+      "Platform tools listed last",
     ].join("\n");
 
-    const { diagnostics } = parseCvMarkdownWithDiagnostics(markdown);
+    const { document, diagnostics } = parseCvMarkdownWithDiagnostics(markdown);
+    const skills = document.sections.find((section) => section.title === "Skills");
 
-    expect(diagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: "orphan_content",
-          line: 9,
-        }),
-      ]),
+    expect(diagnostics.filter((d) => d.code === "orphan_content")).toEqual([]);
+    expect(skills?.blocks.some((block) => block.type === "paragraph")).toBe(
+      true,
     );
   });
 });
