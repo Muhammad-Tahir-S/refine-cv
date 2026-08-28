@@ -3,11 +3,18 @@ export interface VoyagerSearchHit {
   title: string;
   company: string;
   linkedinUrl: string;
+  location?: string;
 }
 
 export interface VoyagerApplyInfo {
   externalApplyUrl?: string;
   easyApplyOnly: boolean;
+}
+
+export interface VoyagerJobDetail extends VoyagerApplyInfo {
+  company?: string;
+  location?: string;
+  description?: string;
 }
 
 type VoyagerRecord = Record<string, unknown>;
@@ -114,6 +121,38 @@ function isJobPostingCardEntity(entity: VoyagerRecord): boolean {
   return urn.includes("jobPostingCard");
 }
 
+function locationFromRecord(record: VoyagerRecord): string | undefined {
+  return (
+    textValue(record.formattedLocation) ??
+    textValue(record.locationDescription) ??
+    textValue(record.defaultLocalizedName) ??
+    textValue(record.shortLocationName) ??
+    textValue(record.secondaryDescription)
+  );
+}
+
+function descriptionFromRecord(record: VoyagerRecord): string | undefined {
+  const direct =
+    textValue(record.description) ??
+    textValue(record.jobDescription) ??
+    textValue(record.descriptionText);
+  if (direct) {
+    return direct;
+  }
+
+  const nested = asRecord(record.description);
+  if (nested) {
+    return textValue(nested.text) ?? textValue(nested.rawText);
+  }
+
+  const localized = asRecord(record.localizedDescription);
+  if (localized) {
+    return textValue(localized.rawText) ?? textValue(localized.text);
+  }
+
+  return undefined;
+}
+
 function hitFromJobPostingCard(entity: VoyagerRecord): VoyagerSearchHit | null {
   const urn = String(entity.entityUrn ?? "");
   const jobId = extractJobIdFromUrn(urn);
@@ -124,6 +163,7 @@ function hitFromJobPostingCard(entity: VoyagerRecord): VoyagerSearchHit | null {
     textValue(entity.subtitle) ??
     textValue(entity.primaryDescription) ??
     "Unknown";
+  const location = locationFromRecord(entity);
 
   if (!jobId || !title) {
     return null;
@@ -134,6 +174,7 @@ function hitFromJobPostingCard(entity: VoyagerRecord): VoyagerSearchHit | null {
     title,
     company,
     linkedinUrl: `https://www.linkedin.com/jobs/view/${jobId}/`,
+    location,
   };
 }
 
@@ -156,6 +197,7 @@ function hitFromJobEntity(
     title,
     company,
     linkedinUrl: `https://www.linkedin.com/jobs/view/${numericId}/`,
+    location: locationFromRecord(entity),
   };
 }
 
@@ -248,6 +290,7 @@ export function parseVoyagerSearchPayloads(payloads: unknown[]): VoyagerSearchHi
           title,
           company,
           linkedinUrl: `https://www.linkedin.com/jobs/view/${jobId}/`,
+          location: locationFromRecord(el),
         });
       }
     }
@@ -334,16 +377,88 @@ export function parseCompanyFromJobDetail(payload: unknown): string | undefined 
   return undefined;
 }
 
-export function parseVoyagerJobDetailPayload(payload: unknown): VoyagerApplyInfo & { company?: string } {
+function parseLocationFromJobDetail(payload: unknown): string | undefined {
+  const root = asRecord(payload);
+  if (!root) {
+    return undefined;
+  }
+
+  const fromRoot = locationFromRecord(root);
+  if (fromRoot) {
+    return fromRoot;
+  }
+
+  const data = asRecord(root.data);
+  if (data) {
+    const fromData = locationFromRecord(data);
+    if (fromData) {
+      return fromData;
+    }
+  }
+
+  for (const item of collectIncluded(root)) {
+    const entity = asRecord(item);
+    if (!entity) {
+      continue;
+    }
+    if (isJobPostingEntity(entity)) {
+      const location = locationFromRecord(entity);
+      if (location) {
+        return location;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function parseDescriptionFromJobDetail(payload: unknown): string | undefined {
+  const root = asRecord(payload);
+  if (!root) {
+    return undefined;
+  }
+
+  const fromRoot = descriptionFromRecord(root);
+  if (fromRoot) {
+    return fromRoot;
+  }
+
+  const data = asRecord(root.data);
+  if (data) {
+    const fromData = descriptionFromRecord(data);
+    if (fromData) {
+      return fromData;
+    }
+  }
+
+  for (const item of collectIncluded(root)) {
+    const entity = asRecord(item);
+    if (!entity) {
+      continue;
+    }
+    if (isJobPostingEntity(entity)) {
+      const description = descriptionFromRecord(entity);
+      if (description) {
+        return description;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+export function parseVoyagerJobDetailPayload(payload: unknown): VoyagerJobDetail {
   const root = asRecord(payload);
   if (!root) {
     return { easyApplyOnly: false };
   }
 
   const company = parseCompanyFromJobDetail(payload);
+  const location = parseLocationFromJobDetail(payload);
+  const description = parseDescriptionFromJobDetail(payload);
   const direct = findApplyInRecord(root);
   if (direct) {
-    return { ...direct, company };
+    return { ...direct, company, location, description };
   }
 
   for (const item of collectIncluded(root)) {
@@ -353,11 +468,11 @@ export function parseVoyagerJobDetailPayload(payload: unknown): VoyagerApplyInfo
     }
     const found = findApplyInRecord(entity);
     if (found) {
-      return { ...found, company };
+      return { ...found, company, location, description };
     }
   }
 
-  return { easyApplyOnly: false, company };
+  return { easyApplyOnly: false, company, location, description };
 }
 
 export function companyFromApplyUrl(url: string): string | undefined {

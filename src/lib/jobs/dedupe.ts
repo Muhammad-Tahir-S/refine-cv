@@ -26,6 +26,39 @@ export function isBlocklisted(company: string, blocklist: string[]): boolean {
   return blocklist.some((entry) => normalizeCompanyName(entry) === normalized);
 }
 
+/** Apply-host domains that commonly surface UK/EU-only or reposted spam in LinkedIn discovery. */
+export const LINKEDIN_APPLY_DOMAIN_BLOCKLIST = [
+  "bestjobtool.com",
+  "easyapply.jobs",
+];
+
+export function isBlockedApplyUrl(
+  url: string,
+  companyBlocklist: string[] = [],
+): boolean {
+  let host: string;
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+
+  for (const domain of LINKEDIN_APPLY_DOMAIN_BLOCKLIST) {
+    if (host === domain || host.endsWith(`.${domain}`)) {
+      return true;
+    }
+  }
+
+  for (const entry of companyBlocklist) {
+    const slug = normalizeCompanyName(entry).replace(/\s+/g, "");
+    if (slug.length >= 4 && host.includes(slug)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 const TRACKING_QUERY_PARAMS = new Set([
   "fbclid",
   "gclid",

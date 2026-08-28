@@ -46,11 +46,12 @@ describe("dedupe", () => {
 
 describe("blocklist", () => {
   it("blocks Metabase and Canonical", () => {
-    const blocklist = ["Metabase", "Canonical", "Micro1"];
+    const blocklist = ["Metabase", "Canonical",];
     expect(isBlocklisted("Metabase", blocklist)).toBe(true);
     expect(isBlocklisted("Canonical", blocklist)).toBe(true);
     expect(isBlocklisted("Hostaway", blocklist)).toBe(false);
   });
+
 });
 
 describe("normalize", () => {

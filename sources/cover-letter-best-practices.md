@@ -48,27 +48,31 @@ Primary authorities: university career centers (Harvard, MIT, UC Berkeley). Recr
 
 **Source IDs:** `mit-eecs-commlab-cover-letter`, `mit-capd-cover-letter`
 
-Parts:
+Parts (content to cover; **format cap is 3 body paragraphs**):
 
 1. **Opening** — name the exact role (and req number if any), one-sentence professional introduction, and the single strongest verified proof point that maps to the JD.
-2. **Body (1–2 paragraphs)** — one anchor example told concretely: the constraint, the decision (including what was considered and rejected where true), what shipped, the measurable result. Touch the JD's core skill directly.
+2. **Body** — one anchor example told concretely: the constraint, the decision (including what was considered and rejected where true), what shipped, the measurable result. Touch the JD's core skill directly.
 3. **Why this company** — name one specific, real thing (product, engineering blog post, open-source tool, stated challenge) and connect it to something already done.
 4. **Close** — restate fit in one sentence, thank the reader, state interest in a conversation.
+
+Pack parts 1–4 into **at most three body paragraphs** (greeting and sign-off excluded): ¶1 opening + proof; ¶2 anchor; ¶3 why-this-company + close.
 
 **Anti-patterns:**
 - "I am writing to express my interest…" openers
 - Body paragraphs that list three shallow projects instead of one deep one
 - Company flattery with no specific referent
+- Four or more body paragraphs
 
-### Rule: 250–400 words, one page; lean short for engineering roles
+### Rule: Max 3 paragraphs and 650 words; prefer 250–400 for engineering
 
-**Why:** Hiring managers prefer this range; engineering guidance in 2026 favors under ~300 words. Senior roles may run to ~400. Obey any explicit employer word limit first. [resumegenius-cover-letter-stats] [mit-capd-cover-letter] [harvard-hes-2024-pdf]
+**Why:** Hiring managers prefer short letters; engineering guidance in 2026 favors under ~300 words. This repo hard-caps every `cover-letter.md` at **3 body paragraphs** and **650 words** so drafts stay scannable. Prefer ~250–400 (≈300 or less for engineering) inside that cap. Obey any stricter employer or user limit first. [resumegenius-cover-letter-stats] [mit-capd-cover-letter] [harvard-hes-2024-pdf]
 
 **Source IDs:** `resumegenius-cover-letter-stats`, `mit-capd-cover-letter`, `harvard-hes-2024-pdf`
 
 **Anti-patterns:**
 - Two-page letters; letters under ~150 words that read dismissive
 - Padding to reach a word count
+- More than 3 body paragraphs or more than 650 words
 
 ### Rule: Address a named person when findable; links below the sign-off
 
@@ -126,7 +130,7 @@ Parts:
 - [ ] Body = one anchor example with constraint, decision, shipped result
 - [ ] Why-this-company names something specific and real
 - [ ] No CV repetition; letter adds detail from PR history the CV lacks
-- [ ] 250–400 words (≈300 or less for engineering roles), one page
+- [ ] Max 3 body paragraphs; max 650 words (prefer ≈300 or less for engineering), one page
 - [ ] Named greeting or "Dear Hiring Manager"; no "To Whom It May Concern"
 - [ ] Links in a block below the sign-off
 - [ ] Sentence openings varied; not every sentence starts with "I"

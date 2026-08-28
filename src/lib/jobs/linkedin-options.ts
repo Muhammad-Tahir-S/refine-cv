@@ -118,10 +118,10 @@ export function buildLinkedInSearchUrl(
 
   const params = new URLSearchParams({
     keywords,
-    geoId: "91000007",
     f_TPR: "r604800",
     f_E: experienceLevels,
     f_WT: "2",
+    sortBy: "DD",
     start: String((page - 1) * 25),
   });
 

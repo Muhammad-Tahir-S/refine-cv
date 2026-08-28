@@ -65,11 +65,11 @@ pnpm discover-linkedin --force  # bypass daily cap when testing fixes
 
 **Browser:** LinkedIn scripts require **Google Chrome** (not Safari). Playwright launches Chrome via `channel: "chrome"`. For agent browser automation in Cursor, this repo configures Playwright MCP with `--browser chrome` in `.cursor/mcp.json` (Cursor's built-in Browser Tab uses embedded Chromium and cannot be switched to Chrome).
 
-LinkedIn discovery uses **Voyager API interception** (search) plus lightweight **in-page detail fetches** for `applyMethod.companyApplyUrl` — no DOM scraping or Apply-button clicks.
+LinkedIn discovery uses **Voyager API interception** (search) plus lightweight **in-page detail fetches** for apply URL, location, and description — no DOM scraping or Apply-button clicks. Results are classified with the same Nigeria geo policy as `pnpm scan-jobs` (`config/job-search.json` → `src/lib/jobs/geo.ts`). The primary list is **Nigeria-eligible** only; verify-geo and likely-excluded tiers are separate sections in `linkedin-discovery.md`.
 
-If discovery reports **0 jobs extracted**, the session likely expired or Voyager API shape changed — re-run `pnpm linkedin:login`. Check `linkedin-discovery.md` for per-page counts and Easy Apply vs external apply split.
+If discovery reports **0 jobs extracted**, the session likely expired or Voyager API shape changed — re-run `pnpm linkedin:login`. Check `linkedin-discovery.md` for per-page counts, geo tiers, and Easy Apply vs external apply split.
 
-Review `jobs/*-job-scan/linkedin-discovery.md` (or the latest profile pointer target) for external-apply listings (blocklist filtered). This is separate from the main board scan.
+Review `jobs/*-job-scan/linkedin-discovery.md` (or the latest profile pointer target) for Nigeria-eligible listings first. This is separate from the main board scan but uses the same geo rules.
 
 ### 4. Applied tracking
 

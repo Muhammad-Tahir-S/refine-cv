@@ -69,8 +69,11 @@ program
       console.log(`  Detail API fetches: ${result.stats.detailFetches}`);
       console.log(`  With external apply URL: ${result.stats.withExternalApply}`);
       console.log(`  Easy Apply only: ${result.stats.easyApplyOnly}`);
-      console.log(`  Eligible after blocklist: ${result.stats.eligibleJobs}`);
-      console.log(`  Blocklisted: ${result.stats.blocklisted}`);
+      console.log(`  Blocked apply URL: ${result.stats.blockedApplyUrl}`);
+      console.log(`  Blocklisted company: ${result.stats.blocklisted}`);
+      console.log(`  Nigeria-eligible: ${result.stats.nigeriaEligible}`);
+      console.log(`  Verify geo: ${result.stats.verifyGeo}`);
+      console.log(`  Likely excluded: ${result.stats.likelyExcluded}`);
       console.log(`Review: ${result.outputPath}`);
     },
   );

@@ -1,0 +1,16 @@
+---
+description: Hard length limits for cover-letter.md outputs in refine-cv
+globs: "**/cover-letter.md,jobs/**/cover-letter.md"
+alwaysApply: false
+---
+
+# Cover letter length
+
+When drafting or editing `cover-letter.md` (including `/generate-cover-letter`):
+
+1. **Max 3 body paragraphs** between the greeting and the sign-off. Greeting, name, and link block do not count.
+2. **Max 650 words** in the full letter file (greeting through links). Prefer ~250–400 words for engineering roles unless the user or JD asks for more room within the 650 cap.
+3. Map the usual four content parts into those three paragraphs: opening + proof in ¶1; anchor example in ¶2; why-this-company + close in ¶3.
+4. Employer or user limits that are stricter than these win. Never pad to hit 650.
+
+Authoritative detail: [sources/cover-letter-best-practices.md](../../sources/cover-letter-best-practices.md). Workflow: `.cursor/skills/generate-cover-letter/SKILL.md`.

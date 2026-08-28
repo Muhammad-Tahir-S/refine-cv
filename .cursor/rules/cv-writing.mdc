@@ -14,5 +14,6 @@ When editing or generating CVs, cover letters, match reports, or job-specific ou
 4. **Load profile evidence:** `profile/github-index.json` (primary), `profile/base-cv-enhanced.md` (dates/titles), `profile/github-summary.md`, `profile/questionnaire.md`.
 5. **Guardrails (enforced at edit time):** never invent employers, titles, dates, technologies, or metrics — unsupported items go to `profile/gap-report.md` or the job’s `match-report.md`; respect red lines in `profile/questionnaire.md` and `config/github-repos.json` (only indexed, permitted repos).
 6. **Job outputs** live under `jobs/YYYY-MM-DD-company-role/`; reports must include an **Index search log** per evidence-hierarchy.md §4.
+7. **Cover letters:** max **3 body paragraphs** and **650 words** (see `.cursor/rules/cover-letter-length.mdc` and `sources/cover-letter-best-practices.md`).
 
 For the full workflow use the **tailor-cv** skill (`.cursor/skills/tailor-cv/SKILL.md`) or `/tailor-cv`; for first-time setup use **onboard-profile**.

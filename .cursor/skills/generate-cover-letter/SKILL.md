@@ -84,17 +84,18 @@ From the index search log (not from CV bullets), select:
 
 ### 6. Draft `cover-letter.md`
 
-Follow [cover-letter-best-practices.md](../../../sources/cover-letter-best-practices.md) §2 structure:
+Follow [cover-letter-best-practices.md](../../../sources/cover-letter-best-practices.md) §2 structure (and `.cursor/rules/cover-letter-length.mdc`):
 
 1. **Opening** — role named, one-sentence introduction, the proof point
-2. **Body (1–2 paragraphs)** — the anchor example: constraint, decision, shipped result
+2. **Body** — the anchor example: constraint, decision, shipped result
 3. **Why this company** — the verified specific from step 3, connected to work already done
 4. **Close** — one-sentence fit restatement, thanks, interest in a conversation
 
 Format:
 
 - First person, direct tone per questionnaire § Writing voice (self-intro phrasing; **never cite PR numbers or merge history** in the letter — index backs claims internally; describe shipped work in product terms)
-- 250–400 words; target ≈300 or less for engineering roles unless the JD invites longer
+- **Hard caps:** max **3 body paragraphs** (greeting/sign-off excluded); max **650 words** for the full letter. Prefer ≈300 or less for engineering roles unless the user or JD asks for more room within the cap
+- Pack the four content parts into those three paragraphs: ¶1 opening + proof; ¶2 anchor; ¶3 why-this-company + close
 - Named greeting when findable, else `Dear Hiring Manager`
 - GitHub/portfolio links in a block below the sign-off, bare URLs
 - Vary sentence openings; the letter is a writing sample

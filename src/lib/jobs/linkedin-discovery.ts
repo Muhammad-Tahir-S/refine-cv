@@ -3,9 +3,23 @@ import { createInterface } from "node:readline";
 import { type BrowserContext, type Page, type Response } from "playwright";
 import { paths } from "../paths.js";
 import { launchChromeContext } from "./browser.js";
-import { isBlocklisted, normalizeCompanyName } from "./dedupe.js";
+import {
+  isBlockedApplyUrl,
+  isBlocklisted,
+  normalizeCompanyName,
+} from "./dedupe.js";
+import { inferRemoteScopeFromFields } from "./filter.js";
+import {
+  classifyGeoEligibility,
+  geoEligibilityLabel,
+  geoExclusionReason,
+} from "./geo.js";
 import { atomicWriteFile } from "./persistence.js";
-import { loadBlocklistAt } from "./scan-policy.js";
+import {
+  loadAndCompileScanPolicy,
+  type GeoPolicy,
+  type ScanPolicy,
+} from "./scan-policy.js";
 import type { RoleProfile } from "./role-profile.js";
 import {
   buildLinkedInSearchUrl,
@@ -29,6 +43,8 @@ import {
   parseVoyagerSearchPayloads,
   type VoyagerSearchHit,
 } from "./voyager.js";
+import { stripHtml } from "./normalize.js";
+import type { GeoEligibility, RemoteScope } from "./types.js";
 
 export interface LinkedInDiscoveryOptions {
   maxPages?: number;
@@ -48,6 +64,10 @@ export interface LinkedInDiscoveryHit {
   linkedinUrl: string;
   externalApplyUrl?: string;
   easyApplyOnly?: boolean;
+  location?: string;
+  geoEligibility?: GeoEligibility;
+  geoReason?: string;
+  remoteScope?: RemoteScope;
 }
 
 export interface LinkedInDiscoveryStats {
@@ -57,8 +77,13 @@ export interface LinkedInDiscoveryStats {
   enrichedHits: number;
   withExternalApply: number;
   easyApplyOnly: number;
-  eligibleJobs: number;
+  blockedApplyUrl: number;
   blocklisted: number;
+  nigeriaEligible: number;
+  verifyGeo: number;
+  likelyExcluded: number;
+  /** Primary actionable tier (Nigeria-eligible). */
+  eligibleJobs: number;
   detailFetches: number;
 }
 
@@ -78,6 +103,60 @@ function resolveOutputPath(roleProfile: RoleProfile, explicit?: string): string 
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function classifyLinkedInHitGeo(
+  hit: LinkedInDiscoveryHit,
+  locationText: string,
+  descriptionText: string,
+  geoPolicy: GeoPolicy,
+): LinkedInDiscoveryHit {
+  const location = locationText.trim();
+  const description = stripHtml(descriptionText);
+  const hasGeoText = Boolean(location || description);
+  const remoteScope = inferRemoteScopeFromFields(location, description);
+  let geoEligibility = classifyGeoEligibility(
+    { location, description, remoteScope },
+    geoPolicy,
+  );
+
+  if (!hasGeoText && geoEligibility === "nigeria_eligible") {
+    geoEligibility = "verify_geo";
+  }
+
+  const geoReason =
+    geoEligibility === "likely_excluded"
+      ? geoExclusionReason({ location, description, remoteScope })
+      : undefined;
+
+  return {
+    ...hit,
+    location: location || undefined,
+    remoteScope,
+    geoEligibility,
+    geoReason,
+  };
+}
+
+function formatHitBlock(hit: LinkedInDiscoveryHit): string[] {
+  const lines = [
+    `- **${hit.company}** — ${hit.title}`,
+    `  - LinkedIn: ${hit.linkedinUrl}`,
+  ];
+  if (hit.location) {
+    lines.push(`  - Location: ${hit.location}`);
+  }
+  if (hit.externalApplyUrl) {
+    lines.push(`  - Apply: ${hit.externalApplyUrl}`);
+  }
+  if (hit.geoEligibility) {
+    lines.push(`  - Geo: ${geoEligibilityLabel(hit.geoEligibility)}`);
+  }
+  if (hit.geoReason) {
+    lines.push(`  - Reason: ${hit.geoReason}`);
+  }
+  lines.push("");
+  return lines;
 }
 
 function randomDelay(minMs: number, maxMs: number): Promise<void> {
@@ -166,6 +245,8 @@ async function fetchJobApplyInfo(
   externalApplyUrl?: string;
   easyApplyOnly: boolean;
   company?: string;
+  location?: string;
+  description?: string;
 }> {
   const urls = buildVoyagerDetailUrls(jobId);
 
@@ -292,6 +373,7 @@ async function enrichSearchHits(
   page: Page,
   context: BrowserContext,
   searchHits: VoyagerSearchHit[],
+  geoPolicy: GeoPolicy,
 ): Promise<{ hits: LinkedInDiscoveryHit[]; detailFetches: number }> {
   const csrf = await getCsrfToken(context);
   const enriched: LinkedInDiscoveryHit[] = [];
@@ -302,7 +384,7 @@ async function enrichSearchHits(
     const applyInfo = await fetchJobApplyInfo(page, csrf, searchHit.jobId);
     detailFetches += 1;
 
-    enriched.push({
+    const baseHit: LinkedInDiscoveryHit = {
       company: (() => {
         if (searchHit.company !== "Unknown" && searchHit.company) {
           return searchHit.company;
@@ -321,7 +403,16 @@ async function enrichSearchHits(
       linkedinUrl: searchHit.linkedinUrl,
       externalApplyUrl: applyInfo.externalApplyUrl,
       easyApplyOnly: applyInfo.easyApplyOnly && !applyInfo.externalApplyUrl,
-    });
+    };
+
+    enriched.push(
+      classifyLinkedInHitGeo(
+        baseHit,
+        applyInfo.location ?? searchHit.location ?? "",
+        applyInfo.description ?? "",
+        geoPolicy,
+      ),
+    );
   }
 
   return { hits: enriched, detailFetches };
@@ -376,7 +467,10 @@ export async function runLinkedInDiscovery(
   );
   const roleProfile = options.roleProfile ?? "reactFrontend";
   const outputPath = resolveOutputPath(roleProfile, options.outputPath);
-  const blocklist = loadBlocklistAt(options.configPath);
+  const policy: ScanPolicy = loadAndCompileScanPolicy({
+    configPath: options.configPath,
+    profileOverride: roleProfile,
+  });
 
   if (!skipDiscoveryState && !force) {
     const prior = loadLinkedInDiscoveryState();
@@ -457,7 +551,7 @@ export async function runLinkedInDiscovery(
     );
 
     const { hits: enrichedHits, detailFetches: totalDetailFetches } =
-      await enrichSearchHits(page, context, roleFilteredSearchHits);
+      await enrichSearchHits(page, context, roleFilteredSearchHits, policy.geo);
 
     const allHits: LinkedInDiscoveryHit[] = [];
     const seen = new Set<string>();
@@ -474,10 +568,30 @@ export async function runLinkedInDiscovery(
     const easyApplyOnly = allHits.filter(
       (hit) => hit.easyApplyOnly && !hit.externalApplyUrl,
     );
-    const eligible = withExternal.filter(
-      (hit) => !isBlocklisted(hit.company, blocklist),
+    const blockedApplyUrl = withExternal.filter(
+      (hit) =>
+        hit.externalApplyUrl &&
+        isBlockedApplyUrl(hit.externalApplyUrl, policy.blocklist),
     );
-    const blocklisted = withExternal.length - eligible.length;
+    const blocklisted = withExternal.filter((hit) =>
+      isBlocklisted(hit.company, policy.blocklist),
+    );
+    const afterBlockFilters = withExternal.filter(
+      (hit) =>
+        !isBlocklisted(hit.company, policy.blocklist) &&
+        (!hit.externalApplyUrl ||
+          !isBlockedApplyUrl(hit.externalApplyUrl, policy.blocklist)),
+    );
+
+    const nigeriaEligible = afterBlockFilters.filter(
+      (hit) => hit.geoEligibility === "nigeria_eligible",
+    );
+    const verifyGeo = afterBlockFilters.filter(
+      (hit) => hit.geoEligibility === "verify_geo",
+    );
+    const likelyExcluded = afterBlockFilters.filter(
+      (hit) => hit.geoEligibility === "likely_excluded",
+    );
 
     const stats: LinkedInDiscoveryStats = {
       pagesRequested: maxPages,
@@ -486,8 +600,12 @@ export async function runLinkedInDiscovery(
       enrichedHits: roleFilteredSearchHits.length,
       withExternalApply: withExternal.length,
       easyApplyOnly: easyApplyOnly.length,
-      eligibleJobs: eligible.length,
-      blocklisted,
+      blockedApplyUrl: blockedApplyUrl.length,
+      blocklisted: blocklisted.length,
+      nigeriaEligible: nigeriaEligible.length,
+      verifyGeo: verifyGeo.length,
+      likelyExcluded: likelyExcluded.length,
+      eligibleJobs: nigeriaEligible.length,
       detailFetches: totalDetailFetches,
     };
 
@@ -502,6 +620,8 @@ export async function runLinkedInDiscovery(
       `**Keywords:** ${keywords}`,
       `**Experience (f_E):** ${experienceLevels}`,
       `**Role profile:** ${roleProfile}`,
+      `**Geo policy:** ${policy.geo.summary}`,
+      `**Applicant:** ${policy.applicant.location} (${policy.applicant.citizenship})`,
       `**Pages requested:** ${maxPages}`,
       `**Pages scanned:** ${pagesScanned}`,
       `**Jobs extracted (Voyager):** ${collectedSearchHits.length}`,
@@ -509,44 +629,60 @@ export async function runLinkedInDiscovery(
       `**Detail API fetches:** ${totalDetailFetches}`,
       `**With external apply URL:** ${withExternal.length}`,
       `**Easy Apply only (skipped):** ${easyApplyOnly.length}`,
-      `**Eligible after blocklist:** ${eligible.length}`,
-      `**Blocklisted:** ${blocklisted}`,
+      `**Blocked apply URL:** ${blockedApplyUrl.length}`,
+      `**Blocklisted company:** ${blocklisted.length}`,
+      `**Nigeria-eligible:** ${nigeriaEligible.length}`,
+      `**Verify geo:** ${verifyGeo.length}`,
+      `**Likely excluded:** ${likelyExcluded.length}`,
       "",
       "## Per-page extraction",
       "",
       perPageLine || "_No pages scanned._",
       "",
-      "## External-apply listings (blocklist filtered)",
+      "## Nigeria-eligible (apply from Lagos)",
       "",
     ];
 
-    for (const hit of eligible) {
-      lines.push(
-        `- **${hit.company}** — ${hit.title}`,
-        `  - LinkedIn: ${hit.linkedinUrl}`,
-        `  - Apply: ${hit.externalApplyUrl}`,
-        "",
-      );
+    if (nigeriaEligible.length === 0) {
+      lines.push("_No Nigeria-eligible external-apply listings this run._", "");
+    } else {
+      for (const hit of nigeriaEligible) {
+        lines.push(...formatHitBlock(hit));
+      }
     }
 
-    if (eligible.length === 0) {
-      lines.push("_No eligible external-apply listings this run._");
-      if (withExternal.length > 0) {
-        lines.push("", "## Blocklisted external apply (sample)", "");
-        for (const hit of withExternal
-          .filter((entry) => isBlocklisted(entry.company, blocklist))
-          .slice(0, 10)) {
-          lines.push(
-            `- ${hit.company} — ${hit.title} — ${hit.externalApplyUrl}`,
-          );
-        }
+    lines.push("## Verify geo (manual check before applying)", "");
+    if (verifyGeo.length === 0) {
+      lines.push("_None after blocklist/apply-url filters._", "");
+    } else {
+      for (const hit of verifyGeo) {
+        lines.push(...formatHitBlock(hit));
       }
-      if (easyApplyOnly.length > 0) {
-        lines.push("", "## Easy Apply only (sample)", "");
-        for (const hit of easyApplyOnly.slice(0, 10)) {
-          lines.push(`- ${hit.company} — ${hit.title}`);
-        }
+    }
+
+    if (likelyExcluded.length > 0) {
+      lines.push("## Likely excluded (sample)", "");
+      for (const hit of likelyExcluded.slice(0, 15)) {
+        lines.push(...formatHitBlock(hit));
       }
+    }
+
+    if (blockedApplyUrl.length > 0) {
+      lines.push("## Blocked apply URL (sample)", "");
+      for (const hit of blockedApplyUrl.slice(0, 10)) {
+        lines.push(
+          `- ${hit.company} — ${hit.title} — ${hit.externalApplyUrl}`,
+        );
+      }
+      lines.push("");
+    }
+
+    if (easyApplyOnly.length > 0 && nigeriaEligible.length === 0) {
+      lines.push("## Easy Apply only (sample)", "");
+      for (const hit of easyApplyOnly.slice(0, 10)) {
+        lines.push(`- ${hit.company} — ${hit.title}`);
+      }
+      lines.push("");
     }
 
     atomicWriteFile(outputPath, `${lines.join("\n")}\n`, { backup: true });
@@ -558,7 +694,7 @@ export async function runLinkedInDiscovery(
       });
     }
 
-    return { outputPath, hits: eligible, stats };
+    return { outputPath, hits: nigeriaEligible, stats };
   } finally {
     await context.close();
   }

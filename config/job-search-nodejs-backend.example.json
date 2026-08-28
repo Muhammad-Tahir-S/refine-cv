@@ -30,8 +30,7 @@
     "Virtusa",
     "Mindrift",
     "Metabase",
-    "Canonical",
-    "Micro1"
+    "Canonical"
   ],
   "_comment": "Copy to config/job-search-nodejs-backend.json. Geo classification in src/lib/jobs/geo.ts is Nigeria-focused — edit applicant fields for your situation; other countries need geo.ts changes."
 }

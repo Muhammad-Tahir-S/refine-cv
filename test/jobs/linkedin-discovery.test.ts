@@ -11,7 +11,7 @@ import {
 } from "../../src/lib/jobs/linkedin-options.ts";
 
 describe("linkedin search url", () => {
-  it("uses default keywords and experience levels", () => {
+  it("uses default keywords and experience levels without EMEA geoId", () => {
     const url = buildLinkedInSearchUrl({ page: 1 });
     expect(url).toContain("keywords=react+frontend");
     expect(url).toContain(
@@ -19,6 +19,8 @@ describe("linkedin search url", () => {
     );
     expect(url).toContain("start=0");
     expect(url).toContain("f_WT=2");
+    expect(url).toContain("sortBy=DD");
+    expect(url).not.toContain("geoId=");
   });
 
   it("applies custom keywords and experience filters", () => {
